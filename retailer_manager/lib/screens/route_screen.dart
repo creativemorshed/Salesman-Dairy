@@ -1,0 +1,248 @@
+import 'package:flutter/material.dart';
+
+import '../db.dart';
+import '../sheets.dart';
+import '../state.dart';
+import '../utils.dart';
+import '../widgets.dart';
+import 'outlet_detail.dart';
+
+class _RouteData {
+  _RouteData(this.market, this.route, this.extras, this.todaySales,
+      this.todayColl);
+  final Rec? market;
+  final List<Rec> route; // মার্কেটের আউটলেট
+  final List<Rec> extras; // অন্য মার্কেটের যাদের টাকা দেওয়ার তারিখ হয়ে গেছে
+  final double todaySales, todayColl;
+}
+
+/// আজকের রুট: মার্কেটের সব আউটলেট (বাকি আগে), ভিজিট এন্ট্রি
+class RouteScreen extends StatefulWidget {
+  const RouteScreen({super.key});
+
+  @override
+  State<RouteScreen> createState() => _RouteScreenState();
+}
+
+class _RouteScreenState extends State<RouteScreen> {
+  int _filter = 0; // 0 সব, 1 বাকি, 2 সম্পন্ন
+
+  Future<_RouteData> _load() async {
+    final db = AppDb.instance;
+    final t = today(), n = nextDay(t);
+    final market = await db.activeMarket(selectedMarket.value);
+    final route =
+        market == null ? <Rec>[] : await db.route(market['id'] as int);
+    final promises = await db.promises(t);
+    final extras = promises
+        .where((p) => market == null || p['market_id'] != market['id'])
+        .toList();
+    return _RouteData(market, route, extras, await db.sales(t, n),
+        await db.collected(t, n));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('আজকের রুট')),
+      body: ValueListenableBuilder<int?>(
+        valueListenable: selectedMarket,
+        builder: (context, _, __) => DbBuilder<_RouteData>(
+          load: _load,
+          builder: (context, d) => _body(context, d),
+        ),
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context, _RouteData d) {
+    final market = d.market;
+    if (market == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const EmptyNote('এখনো কোনো মার্কেট নেই।\nপ্রথমে মার্কেট যোগ করুন।'),
+            FilledButton(
+                onPressed: () => showMarketSheet(context),
+                child: const Text('মার্কেট যোগ করুন')),
+          ],
+        ),
+      );
+    }
+
+    final pending = d.route.where((r) => r['visited_today'] != 1).toList();
+    final done = d.route.where((r) => r['visited_today'] == 1).toList();
+    final shown =
+        _filter == 1 ? pending : (_filter == 2 ? done : d.route);
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: MarketChip(
+                name: market['name'] as String,
+                onTap: () => showMarketPicker(context)),
+          ),
+        ),
+        AppCard(
+          child: Row(
+            children: [
+              _mini(context, 'ভিজিট', '${bn(done.length)}/${bn(d.route.length)}'),
+              _mini(context, 'আজকের বিক্রি', taka(d.todaySales)),
+              _mini(context, 'আজকের আদায়', taka(d.todayColl)),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 8,
+            children: [
+              for (final (i, label, n) in [
+                (0, 'সব', d.route.length),
+                (1, 'বাকি', pending.length),
+                (2, 'সম্পন্ন', done.length),
+              ])
+                ChoiceChip(
+                  label: Text('$label (${bn(n)})'),
+                  selected: _filter == i,
+                  onSelected: (_) => setState(() => _filter = i),
+                ),
+            ],
+          ),
+        ),
+        if (d.route.isEmpty)
+          const EmptyNote('এই মার্কেটে কোনো আউটলেট নেই।\n"আউটলেট" ট্যাব থেকে যোগ করুন।')
+        else if (shown.isEmpty)
+          const EmptyNote('এই তালিকায় কিছু নেই'),
+        for (final r in shown) _OutletCard(r: r),
+        if (d.extras.isNotEmpty) ...[
+          SectionTitle('অন্য মার্কেটে টাকা চাওয়ার কথা', count: d.extras.length),
+          for (final r in d.extras) _OutletCard(r: r, showMarket: true),
+        ],
+      ],
+    );
+  }
+
+  Widget _mini(BuildContext context, String label, String value) {
+    final tt = Theme.of(context).textTheme;
+    return Expanded(
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value,
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          ),
+          Text(label, style: tt.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _OutletCard extends StatelessWidget {
+  const _OutletCard({required this.r, this.showMarket = false});
+  final Rec r;
+  final bool showMarket;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final due = (r['due'] as num).toDouble();
+    final phone = (r['phone'] as String?) ?? '';
+    final visited = r['visited_today'] == 1;
+    final reminder = r['pay_reminder'] as String?;
+    final promiseDue =
+        reminder != null && reminder.compareTo(today()) <= 0 && due > 0;
+    final owner = (r['owner'] as String?) ?? '';
+    final sub = [
+      if (showMarket) r['market_name'] as String,
+      if (owner.isNotEmpty) owner,
+      agoText(r['last_visit'] as String?),
+    ].join(' · ');
+
+    return AppCard(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => OutletDetail(id: r['id'] as int)),
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GradeBadge(r['grade'] as String),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r['name'] as String,
+                        style: tt.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(sub, style: tt.bodySmall),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(taka(due),
+                      style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: due > 0 ? cs.error : Colors.green)),
+                  Text('বাকি', style: tt.bodySmall),
+                ],
+              ),
+            ],
+          ),
+          if (promiseDue)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(children: [
+                Icon(Icons.alarm, size: 16, color: cs.primary),
+                const SizedBox(width: 4),
+                Text('টাকা দেওয়ার তারিখ: ${niceDate(reminder)}',
+                    style: TextStyle(color: cs.primary, fontSize: 12)),
+              ]),
+            ),
+          Row(
+            children: [
+              if (phone.isNotEmpty) ...[
+                IconButton(
+                    tooltip: 'কল',
+                    icon: const Icon(Icons.call),
+                    onPressed: () => callPhone(context, phone)),
+                IconButton(
+                    tooltip: 'WhatsApp',
+                    icon: const Icon(Icons.chat),
+                    onPressed: () => openWhatsApp(context, phone)),
+              ],
+              const Spacer(),
+              if (visited) ...[
+                const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                const SizedBox(width: 4),
+                const Text('ভিজিট হয়েছে'),
+                TextButton(
+                    onPressed: () => showVisitSheet(context, r),
+                    child: const Text('আবার এন্ট্রি')),
+              ] else
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('ভিজিট করুন'),
+                  onPressed: () => showVisitSheet(context, r),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -1,0 +1,33 @@
+name: salesman_diary
+description: সেলসম্যানের ব্যক্তিগত ডায়েরি (অফলাইন)
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  url_launcher: ^6.3.0
+  share_plus: ^10.1.4
+  file_picker: ^8.1.2
+  intl: '>=0.19.0 <1.0.0'
+  # রিমাইন্ডার নোটিফিকেশন
+  flutter_local_notifications: '>=18.0.1 <19.0.0'
+  timezone: '>=0.9.4 <1.0.0'
+  flutter_timezone: '>=2.0.0 <6.0.0'
+  # অ্যাপ লক
+  crypto: ^3.0.5
+  local_auth: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
