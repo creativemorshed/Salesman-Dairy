@@ -33,6 +33,9 @@ jobs:
       - name: Android প্রজেক্ট তৈরি
         run: flutter create . --platforms=android --org com.salesman.retailer --project-name retailer_manager
 
+      - name: ডিফল্ট টেস্ট ফাইল মুছে ফেলা (আমাদের অ্যাপের সাথে মেলে না)
+        run: rm -rf test
+
       - name: Manifest / Gradle প্যাচ
         run: python3 tool/patch_android.py
 

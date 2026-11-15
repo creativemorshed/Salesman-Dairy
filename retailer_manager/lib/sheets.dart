@@ -153,7 +153,7 @@ Future<void> showMarketPicker(BuildContext context) async {
                                 const Icon(Icons.store_mall_directory_outlined),
                             title: Text(m['name'] as String),
                             subtitle: Text(
-                                '${daysText(m['days'] as String)} · ${bn(m['outlet_count'])}টি দোকান'),
+                                '${daysText(m['days'] as String)} · ${bn(m['outlet_count'] as num)}টি দোকান'),
                             trailing: Text(taka(m['due'] as num),
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold)),

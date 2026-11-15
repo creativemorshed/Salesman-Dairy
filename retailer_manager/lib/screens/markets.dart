@@ -47,7 +47,7 @@ class MarketsScreen extends StatelessWidget {
                                 .titleMedium
                                 ?.copyWith(fontWeight: FontWeight.w700)),
                         Text(
-                            '${daysText(m['days'] as String)} · ${bn(m['outlet_count'])}টি আউটলেট',
+                            '${daysText(m['days'] as String)} · ${bn(m['outlet_count'] as num)}টি আউটলেট',
                             style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
