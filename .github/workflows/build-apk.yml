@@ -1,0 +1,61 @@
+name: Build Retailer Manager APK
+
+on:
+  workflow_dispatch:        # Actions ট্যাব থেকে হাতে চালানোর জন্য
+  push:
+    branches: [main]
+    paths:
+      - 'retailer_manager/**'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: retailer_manager
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Android প্রজেক্ট তৈরি
+        run: flutter create . --platforms=android --org com.salesman.retailer --project-name retailer_manager
+
+      - name: Manifest / Gradle প্যাচ
+        run: python3 tool/patch_android.py
+
+      - run: flutter pub get
+
+      - name: বিশ্লেষণ (এরর দেখার জন্য, ব্যর্থ হলেও থামবে না)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings || true
+
+      - name: Release APK বিল্ড
+        run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retailer-manager-apk
+          path: retailer_manager/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Releases পেজে "apk-latest" হিসেবে প্রকাশ
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: .
+        run: |
+          cp retailer_manager/build/app/outputs/flutter-apk/app-release.apk retailer-manager.apk
+          gh release delete apk-latest --yes --cleanup-tag || true
+          gh release create apk-latest retailer-manager.apk \
+            --title "Retailer Manager APK (সর্বশেষ)" \
+            --notes "ফোন থেকে retailer-manager.apk ডাউনলোড করে ইনস্টল করুন। কমিট: ${GITHUB_SHA::7}"
