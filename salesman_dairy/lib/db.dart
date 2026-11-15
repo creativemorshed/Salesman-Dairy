@@ -38,7 +38,7 @@ CREATE TABLE markets(
   name TEXT NOT NULL,
   days TEXT NOT NULL DEFAULT ''
 )''');
-        // আউটলেট (দোকান): grade = A/B/C, opening_due = আগে থেকে থাকা বাকি
+        // আউটলেট (দোকান): grade = A+/A/B, opening_due = আগে থেকে থাকা বাকি
         await db.execute('''
 CREATE TABLE outlets(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,10 +197,12 @@ $_marketDue AS due''';
     );
   }
 
-  /// মার্কেটের রুট: আগে বাকি (ভিজিট হয়নি), তারপর গ্রেড A→C, তারপর বেশি বাকি
+  /// মার্কেটের রুট: আগে বাকি (ভিজিট হয়নি), তারপর গ্রেড A+→B, তারপর বেশি বাকি
   Future<List<Rec>> route(int marketId) async => (await _d).rawQuery(
         'SELECT $_outletCols $_outletFrom WHERE o.market_id=? '
-        'ORDER BY visited_today, o.grade, due DESC, o.name COLLATE NOCASE',
+        'ORDER BY visited_today, '
+        "CASE o.grade WHEN 'A+' THEN 0 WHEN 'A' THEN 1 ELSE 2 END, "
+        'due DESC, o.name COLLATE NOCASE',
         [today(), marketId],
       );
 

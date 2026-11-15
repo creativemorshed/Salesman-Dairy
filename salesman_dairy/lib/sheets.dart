@@ -310,10 +310,11 @@ class _OutletFormState extends State<_OutletForm> {
           ],
         ),
         const SizedBox(height: 14),
-        Text('গ্রেড', style: Theme.of(context).textTheme.titleSmall),
+        Text('গ্রেড (A+ = বড়, A = মাঝারি, B = ছোট)',
+            style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 6),
         Row(children: [
-          for (final g in const ['A', 'B', 'C'])
+          for (final g in const ['A+', 'A', 'B'])
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
@@ -322,9 +323,6 @@ class _OutletFormState extends State<_OutletForm> {
                 onSelected: (_) => setState(() => _grade = g),
               ),
             ),
-          const Expanded(
-              child: Text('A = বড়, B = মাঝারি, C = ছোট',
-                  style: TextStyle(fontSize: 12))),
         ]),
         const SizedBox(height: 14),
         TextField(

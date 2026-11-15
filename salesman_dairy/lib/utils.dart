@@ -123,9 +123,9 @@ int remainingWorkDays(int weeklyOff, [DateTime? now]) {
 
 Color gradeColor(String grade) {
   switch (grade) {
-    case 'A':
+    case 'A+':
       return const Color(0xFF1E6FD9);
-    case 'B':
+    case 'A':
       return const Color(0xFF138A9B);
     default:
       return const Color(0xFFD9901A);
