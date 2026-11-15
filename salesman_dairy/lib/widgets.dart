@@ -256,15 +256,22 @@ class GradeBadge extends StatelessWidget {
 
 /// "মার্কেটঃ- চন্দনাইশ" চিপ — চাপলে মার্কেট বদলানো যায়
 class MarketChip extends StatelessWidget {
-  const MarketChip({super.key, required this.name, required this.onTap});
+  const MarketChip(
+      {super.key, required this.name, required this.onTap, this.showPrefix = true});
   final String? name;
+  final bool showPrefix;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return ActionChip(
       avatar: const Icon(Icons.store_mall_directory_outlined, size: 18),
-      label: Text(name == null ? 'মার্কেট বাছুন' : 'মার্কেটঃ- $name'),
+      label: Text(
+          name == null
+              ? 'মার্কেট বাছুন'
+              : (showPrefix ? 'মার্কেটঃ- $name' : name!),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis),
       onPressed: onTap,
     );
   }

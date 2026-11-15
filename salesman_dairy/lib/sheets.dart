@@ -380,6 +380,10 @@ class _VisitFormState extends State<_VisitForm> {
   }
 
   Future<void> _save() async {
+    if (parseNum(_sale.text) <= 0 && parseNum(_coll.text) <= 0) {
+      snack(context, 'বিক্রি বা আদায় লিখুন। কিছু না থাকলে "ভিজিট" বাটন চাপুন।');
+      return;
+    }
     await AppDb.instance.addVisit(
       outletId: widget.outlet['id'] as int,
       date: today(),
@@ -398,7 +402,7 @@ class _VisitFormState extends State<_VisitForm> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('ভিজিট — ${widget.outlet['name']}',
+        Text('এন্ট্রি — ${widget.outlet['name']}',
             style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 4),
         Text('বর্তমান বাকি: ${taka(_due)}'),
@@ -428,6 +432,70 @@ class _VisitFormState extends State<_VisitForm> {
                 fontWeight: FontWeight.bold,
                 color: _newDue > 0 ? cs.error : Colors.green)),
         const SizedBox(height: 10),
+        TextField(
+            controller: _note,
+            maxLines: 2,
+            decoration: const InputDecoration(
+                labelText: 'নোট (কী কথা হলো?)')),
+        const SizedBox(height: 12),
+        ReminderField(
+          label: 'পরের তাগাদার তারিখ',
+          value: _reminder,
+          onChanged: (v) => setState(() => _reminder = v),
+        ),
+        const SizedBox(height: 12),
+        FilledButton(onPressed: _save, child: const Text('এন্ট্রি সংরক্ষণ')),
+      ],
+    );
+  }
+}
+
+// =====================================================================
+// শুধু ভিজিট (বিক্রি/আদায় ছাড়া): নোট + পরের তাগাদা
+// =====================================================================
+Future<void> showQuickVisitSheet(BuildContext context, Rec outlet) =>
+    _sheet<void>(context, _QuickVisitForm(outlet: outlet));
+
+class _QuickVisitForm extends StatefulWidget {
+  const _QuickVisitForm({required this.outlet});
+  final Rec outlet;
+
+  @override
+  State<_QuickVisitForm> createState() => _QuickVisitFormState();
+}
+
+class _QuickVisitFormState extends State<_QuickVisitForm> {
+  final _note = TextEditingController();
+  late String? _reminder = widget.outlet['pay_reminder'] as String?;
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    await AppDb.instance.addVisit(
+      outletId: widget.outlet['id'] as int,
+      date: today(),
+      note: _note.text.trim(),
+      payReminder: _reminder,
+    );
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final due = (widget.outlet['due'] as num).toDouble();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('ভিজিট — ${widget.outlet['name']}',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 4),
+        Text('বর্তমান বাকি: ${taka(due)}'),
+        const SizedBox(height: 12),
         TextField(
             controller: _note,
             maxLines: 2,

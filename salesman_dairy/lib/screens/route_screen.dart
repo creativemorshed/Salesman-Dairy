@@ -26,11 +26,19 @@ class RouteScreen extends StatefulWidget {
 
 class _RouteScreenState extends State<RouteScreen> {
   int _filter = 0; // 0 সব, 1 বাকি, 2 সম্পন্ন
+  final _marketName = ValueNotifier<String?>(null);
+
+  @override
+  void dispose() {
+    _marketName.dispose();
+    super.dispose();
+  }
 
   Future<_RouteData> _load() async {
     final db = AppDb.instance;
     final t = today(), n = nextDay(t);
     final market = await db.activeMarket(selectedMarket.value);
+    _marketName.value = market?['name'] as String?;
     final route =
         market == null ? <Rec>[] : await db.route(market['id'] as int);
     final promises = await db.promises(t);
@@ -44,7 +52,25 @@ class _RouteScreenState extends State<RouteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('আজকের রুট')),
+      appBar: AppBar(
+        title: const Text('আজকের রুট'),
+        actions: [
+          ValueListenableBuilder<String?>(
+            valueListenable: _marketName,
+            builder: (context, name, _) => Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.5),
+                child: MarketChip(
+                    name: name,
+                    showPrefix: false,
+                    onTap: () => showMarketPicker(context)),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: ValueListenableBuilder<int?>(
         valueListenable: selectedMarket,
         builder: (context, _, __) => DbBuilder<_RouteData>(
@@ -79,15 +105,6 @@ class _RouteScreenState extends State<RouteScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: MarketChip(
-                name: market['name'] as String,
-                onTap: () => showMarketPicker(context)),
-          ),
-        ),
         AppCard(
           child: Row(
             children: [
@@ -226,19 +243,20 @@ class _OutletCard extends StatelessWidget {
                     onPressed: () => openWhatsApp(context, phone)),
               ],
               const Spacer(),
-              if (visited) ...[
-                const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                const SizedBox(width: 4),
-                const Text('ভিজিট হয়েছে'),
-                TextButton(
-                    onPressed: () => showVisitSheet(context, r),
-                    child: const Text('আবার এন্ট্রি')),
-              ] else
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.edit_note),
-                  label: const Text('ভিজিট করুন'),
-                  onPressed: () => showVisitSheet(context, r),
+              if (visited)
+                const Padding(
+                  padding: EdgeInsets.only(right: 6),
+                  child: Icon(Icons.check_circle, color: Colors.green, size: 22),
                 ),
+              OutlinedButton(
+                onPressed: () => showVisitSheet(context, r),
+                child: const Text('এন্ট্রি', softWrap: false),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonal(
+                onPressed: () => showQuickVisitSheet(context, r),
+                child: const Text('ভিজিট', softWrap: false),
+              ),
             ],
           ),
         ],

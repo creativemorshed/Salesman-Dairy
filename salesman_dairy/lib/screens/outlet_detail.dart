@@ -98,25 +98,18 @@ class _View extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             child: Row(children: [
               Expanded(
-                child: OutlinedButton(
-                  onPressed: () => showEntrySheet(context, o, 'sales'),
-                  child: const Text('বিক্রি'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => showEntrySheet(context, o, 'collections'),
-                  child: const Text('আদায়'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   icon: const Icon(Icons.edit_note),
-                  label: const Text('ভিজিট'),
+                  label: const Text('এন্ট্রি', softWrap: false),
                   onPressed: () => showVisitSheet(context, o),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.check),
+                  label: const Text('ভিজিট', softWrap: false),
+                  onPressed: () => showQuickVisitSheet(context, o),
                 ),
               ),
             ]),
