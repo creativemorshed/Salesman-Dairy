@@ -127,6 +127,8 @@ Color gradeColor(String grade) {
       return const Color(0xFF1E6FD9);
     case 'A':
       return const Color(0xFF138A9B);
+    case 'F':
+      return const Color(0xFFB3261E);
     default:
       return const Color(0xFFD9901A);
   }

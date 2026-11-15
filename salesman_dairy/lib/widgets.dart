@@ -229,7 +229,7 @@ class ReminderField extends StatelessWidget {
   }
 }
 
-/// আউটলেটের গ্রেড (A+/A/B) — রঙিন গোল ব্যাজ
+/// আউটলেটের গ্রেড (A+/A/B/F) — রঙিন গোল ব্যাজ
 class GradeBadge extends StatelessWidget {
   const GradeBadge(this.grade, {super.key, this.size = 36});
   final String grade;

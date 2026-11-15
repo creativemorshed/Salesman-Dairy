@@ -310,11 +310,11 @@ class _OutletFormState extends State<_OutletForm> {
           ],
         ),
         const SizedBox(height: 14),
-        Text('গ্রেড (A+ = বড়, A = মাঝারি, B = ছোট)',
+        Text('গ্রেড (A+ = বড়, A = মাঝারি, B = ছোট, F = খারাপ)',
             style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 6),
         Row(children: [
-          for (final g in const ['A+', 'A', 'B'])
+          for (final g in const ['A+', 'A', 'B', 'F'])
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
