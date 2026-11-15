@@ -21,7 +21,7 @@ class AppDb {
   void _bump() => changes.value++;
 
   Future<String> dbPath() async =>
-      p.join(await getDatabasesPath(), 'retailer_manager.db');
+      p.join(await getDatabasesPath(), 'salesman_dairy.db');
 
   Future<Database> get _d async => _db ??= await _open();
 
@@ -501,7 +501,7 @@ FROM markets m ORDER BY m.name COLLATE NOCASE''',
   Future<File> backupFile() async {
     await _d; // ডেটাবেস খোলা আছে কিনা নিশ্চিত
     final dir = await getTemporaryDirectory();
-    final out = File(p.join(dir.path, 'retailer_manager_${today()}.db'));
+    final out = File(p.join(dir.path, 'salesman_dairy_${today()}.db'));
     return File(await dbPath()).copy(out.path);
   }
 

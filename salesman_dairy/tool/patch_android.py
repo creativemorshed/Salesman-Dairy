@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """flutter create এর পর Android ফাইলগুলো প্যাচ করে (README-র ক, খ, গ ধাপ)।
-ব্যবহার: python3 tool/patch_android.py  (retailer_manager ফোল্ডার থেকে)"""
+ব্যবহার: python3 tool/patch_android.py  (salesman_dairy ফোল্ডার থেকে)"""
 import glob, os, re, sys
 
 def read(p):
@@ -39,7 +39,7 @@ if "POST_NOTIFICATIONS" not in s:
         s = s.replace("<queries>", "<queries>\n" + extra, 1)
     else:
         s = s.replace("<application", "    <queries>\n" + extra + "    </queries>\n    <application", 1)
-    s = re.sub(r'android:label="[^"]*"', 'android:label="রিটেলার ম্যানেজার"', s, count=1)
+    s = re.sub(r'android:label="[^"]*"', 'android:label="Salesman Dairy"', s, count=1)
     write(man, s)
     print("manifest patched")
 

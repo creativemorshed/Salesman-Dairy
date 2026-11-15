@@ -6,19 +6,19 @@ import 'screens/home.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const RetailerApp());
+  runApp(const SalesmanDairyApp());
   // নোটিফিকেশন চালু করা (সমস্যা হলে অ্যাপ বন্ধ হবে না)
   Reminders.instance.start();
 }
 
-class RetailerApp extends StatelessWidget {
-  const RetailerApp({super.key});
+class SalesmanDairyApp extends StatelessWidget {
+  const SalesmanDairyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     const cream = Color(0xFFF6F1E7);
     return MaterialApp(
-      title: 'রিটেলার ম্যানেজার',
+      title: 'Salesman Dairy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

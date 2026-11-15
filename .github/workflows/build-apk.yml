@@ -1,11 +1,11 @@
-name: Build Retailer Manager APK
+name: Build Salesman Dairy APK
 
 on:
   workflow_dispatch:        # Actions ট্যাব থেকে হাতে চালানোর জন্য
   push:
     branches: [main]
     paths:
-      - 'retailer_manager/**'
+      - 'salesman_dairy/**'
       - '.github/workflows/build-apk.yml'
 
 permissions:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: retailer_manager
+        working-directory: salesman_dairy
     steps:
       - uses: actions/checkout@v4
 
@@ -31,7 +31,7 @@ jobs:
           cache: true
 
       - name: Android প্রজেক্ট তৈরি
-        run: flutter create . --platforms=android --org com.salesman.retailer --project-name retailer_manager
+        run: flutter create . --platforms=android --org com.salesman.dairy --project-name salesman_dairy
 
       - name: ডিফল্ট টেস্ট ফাইল মুছে ফেলা (আমাদের অ্যাপের সাথে মেলে না)
         run: rm -rf test
@@ -49,16 +49,16 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: retailer-manager-apk
-          path: retailer_manager/build/app/outputs/flutter-apk/app-release.apk
+          name: salesman-dairy-apk
+          path: salesman_dairy/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Releases পেজে "apk-latest" হিসেবে প্রকাশ
         env:
           GH_TOKEN: ${{ github.token }}
         working-directory: .
         run: |
-          cp retailer_manager/build/app/outputs/flutter-apk/app-release.apk retailer-manager.apk
+          cp salesman_dairy/build/app/outputs/flutter-apk/app-release.apk salesman-dairy.apk
           gh release delete apk-latest --yes --cleanup-tag || true
-          gh release create apk-latest retailer-manager.apk \
-            --title "Retailer Manager APK (সর্বশেষ)" \
-            --notes "ফোন থেকে retailer-manager.apk ডাউনলোড করে ইনস্টল করুন। কমিট: ${GITHUB_SHA::7}"
+          gh release create apk-latest salesman-dairy.apk \
+            --title "Salesman Dairy APK (সর্বশেষ)" \
+            --notes "ফোন থেকে salesman-dairy.apk ডাউনলোড করে ইনস্টল করুন। কমিট: ${GITHUB_SHA::7}"

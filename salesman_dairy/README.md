@@ -1,4 +1,4 @@
-# রিটেলার ম্যানেজার (Flutter, অফলাইন)
+# Salesman Dairy (Flutter, অফলাইন)
 
 মার্কেটে মার্কেটে ঘুরে দোকান (আউটলেট) ভিজিট করা সেলসম্যানের ব্যক্তিগত অ্যান্ড্রয়েড অ্যাপ।
 **বিক্রি · আদায় · মার্কেট বাকি · টার্গেট · অর্জন** — সব ফোনের ভেতরে (SQLite), ইন্টারনেট বা সার্ভার লাগে না।
@@ -31,7 +31,7 @@
 
 ## ফোল্ডার স্ট্রাকচার
 ```
-retailer_manager/
+salesman_dairy/
 ├── pubspec.yaml
 └── lib/
     ├── main.dart            # থিম, লক গেট, নোটিফিকেশন চালু
@@ -52,8 +52,8 @@ retailer_manager/
 1. [Flutter SDK](https://docs.flutter.dev/get-started/install) ইনস্টল করুন (Dart ≥ 3.3)।
 2. অ্যান্ড্রয়েড ফাইল তৈরি করুন (`lib/` ও `pubspec.yaml` ওভাররাইট হয় না):
    ```
-   cd retailer_manager
-   flutter create . --platforms=android --project-name retailer_manager
+   cd salesman_dairy
+   flutter create . --platforms=android --project-name salesman_dairy
    flutter pub get
    ```
 3. **Android সেটআপ:**
@@ -84,7 +84,7 @@ retailer_manager/
   </intent-filter>
 </receiver>
 ```
-অ্যাপের নাম বাংলায় দেখাতে `<application android:label="রিটেলার ম্যানেজার" ...>` করুন।
+অ্যাপের নাম বাংলায় দেখাতে `<application android:label="Salesman Dairy" ...>` করুন।
 
 ### খ. নোটিফিকেশনের জন্য Java desugaring (`android/app/build.gradle` বা `.kts`)
 Groovy:

@@ -138,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await f.writeAsString(e.value);
         files.add(XFile(f.path));
       }
-      await Share.shareXFiles(files, subject: 'রিটেলার ম্যানেজার — এক্সপোর্ট');
+      await Share.shareXFiles(files, subject: 'Salesman Dairy — এক্সপোর্ট');
     } catch (e) {
       if (mounted) snack(context, 'এক্সপোর্ট হয়নি: $e');
     }
@@ -148,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final f = await AppDb.instance.backupFile();
       await Share.shareXFiles([XFile(f.path)],
-          subject: 'রিটেলার ম্যানেজার — ব্যাকআপ');
+          subject: 'Salesman Dairy — ব্যাকআপ');
     } catch (e) {
       if (mounted) snack(context, 'ব্যাকআপ হয়নি: $e');
     }

@@ -1,5 +1,5 @@
-name: retailer_manager
-description: রিটেলার ম্যানেজমেন্ট — মার্কেট, আউটলেট, বিক্রি, আদায়, বাকি ও টার্গেট (অফলাইন)
+name: salesman_dairy
+description: Salesman Dairy — মার্কেট, আউটলেট, বিক্রি, আদায়, বাকি ও টার্গেট (অফলাইন)
 publish_to: 'none'
 version: 1.0.0+1
 
