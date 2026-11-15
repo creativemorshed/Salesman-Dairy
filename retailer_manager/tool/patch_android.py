@@ -69,3 +69,31 @@ for ma in glob.glob("android/app/src/main/kotlin/**/MainActivity.kt", recursive=
     pkg = re.search(r"^package\s+\S+", m, re.M).group(0)
     write(ma, pkg + "\n\nimport io.flutter.embedding.android.FlutterFragmentActivity\n\nclass MainActivity : FlutterFragmentActivity()\n")
     print("MainActivity patched:", ma)
+
+# ---- ঘ. পুরনো প্লাগইনগুলো (যেমন file_picker) নতুন compileSdk-তে কম্পাইল করানো ----
+for rp, kts in (("android/build.gradle.kts", True), ("android/build.gradle", False)):
+    if not os.path.exists(rp): continue
+    r = read(rp)
+    if "compileSdkVersion(36)" in r or "compileSdkVersion 36" in r: break
+    if kts:
+        hack = """subprojects {
+    afterEvaluate {
+        extensions.findByName("android")?.withGroovyBuilder { "compileSdkVersion"(36) }
+    }
+}
+
+"""
+    else:
+        hack = """subprojects {
+    afterEvaluate { p ->
+        if (p.hasProperty('android')) { p.android { compileSdkVersion 36 } }
+    }
+}
+
+"""
+    # import লাইনগুলো (থাকলে) ফাইলের শুরুতে থাকতে হবে, তাই সেগুলোর পরে বসাই
+    lines = r.split("\n"); i = 0
+    while i < len(lines) and (lines[i].startswith("import ") or not lines[i].strip()): i += 1
+    write(rp, "\n".join(lines[:i]) + ("\n" if i else "") + hack + "\n".join(lines[i:]))
+    print("root gradle patched:", rp)
+    break
