@@ -80,6 +80,10 @@ for rp, kts in (("android/build.gradle.kts", True), ("android/build.gradle", Fal
     afterEvaluate {
         extensions.findByName("android")?.withGroovyBuilder { "compileSdkVersion"(36) }
     }
+    // lint-vital এর টুল ক্র্যাশ করে (NoSuchMethodError) — রিলিজ বিল্ডে এটা বন্ধ রাখি
+    tasks.configureEach {
+        if (name.startsWith("lintVital")) enabled = false
+    }
 }
 
 """
@@ -87,6 +91,9 @@ for rp, kts in (("android/build.gradle.kts", True), ("android/build.gradle", Fal
         hack = """subprojects {
     afterEvaluate { p ->
         if (p.hasProperty('android')) { p.android { compileSdkVersion 36 } }
+    }
+    tasks.configureEach { t ->
+        if (t.name.startsWith('lintVital')) t.enabled = false
     }
 }
 
