@@ -153,7 +153,7 @@ class _RouteScreenState extends State<RouteScreen> {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(value,
-                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           ),
           Text(label, style: tt.bodySmall),
         ],
@@ -213,7 +213,7 @@ class _OutletCard extends StatelessWidget {
                 children: [
                   Text(taka(due),
                       style: tt.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           color: due > 0 ? cs.error : Colors.green)),
                   Text('বাকি', style: tt.bodySmall),
                 ],
@@ -227,9 +227,16 @@ class _OutletCard extends StatelessWidget {
                 Icon(Icons.alarm, size: 16, color: cs.primary),
                 const SizedBox(width: 4),
                 Text('টাকা দেওয়ার তারিখ: ${niceDate(reminder)}',
-                    style: TextStyle(color: cs.primary, fontSize: 12)),
+                    style: tt.bodySmall?.copyWith(color: cs.primary)),
               ]),
             ),
+          if (idleWarning(r) != null && !visited)
+            InfoLine(Icons.history, idleWarning(r)!,
+                color: const Color(0xFFB45309)),
+          if (((r['next_note'] as String?) ?? '').trim().isNotEmpty)
+            InfoLine(Icons.sticky_note_2_outlined,
+                'নোট: ${(r['next_note'] as String).trim()}',
+                color: cs.tertiary),
           Row(
             children: [
               if (phone.isNotEmpty) ...[

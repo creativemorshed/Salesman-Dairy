@@ -57,7 +57,7 @@ class MarketsScreen extends StatelessWidget {
                     children: [
                       Text(taka(due),
                           style: TextStyle(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: due > 0
                                   ? Theme.of(context).colorScheme.error
                                   : Colors.green)),

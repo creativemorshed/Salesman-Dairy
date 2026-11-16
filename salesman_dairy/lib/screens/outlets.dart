@@ -157,12 +157,22 @@ class _OutletsScreenState extends State<OutletsScreen> {
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall),
+                                    if (idleWarning(o) != null)
+                                      InfoLine(Icons.history, idleWarning(o)!,
+                                          color: const Color(0xFFB45309)),
+                                    if (((o['next_note'] as String?) ?? '')
+                                        .trim()
+                                        .isNotEmpty)
+                                      InfoLine(
+                                          Icons.sticky_note_2_outlined,
+                                          'নোট: ${(o['next_note'] as String).trim()}',
+                                          color: cs.tertiary),
                                   ],
                                 ),
                               ),
                               Text(taka(due),
                                   style: TextStyle(
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: FontWeight.w700,
                                       color: due > 0 ? cs.error : Colors.green)),
                             ]),
                           );

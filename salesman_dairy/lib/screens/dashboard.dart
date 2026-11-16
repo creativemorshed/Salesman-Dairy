@@ -13,43 +13,33 @@ class _Dash {
     required this.market,
     required this.route,
     required this.totalDue,
-    required this.sales,
-    required this.collected,
-    required this.salesTarget,
-    required this.collTarget,
-    required this.daysLeft,
+    required this.stale,
+    required this.noted,
   });
   final Rec? market;
   final List<Rec> route;
-  final double totalDue, sales, collected, salesTarget, collTarget;
-  final int daysLeft;
+  final double totalDue;
+  final List<Rec> stale; // দীর্ঘদিন ভিজিট/এন্ট্রি নেই
+  final List<Rec> noted; // পরের ভিজিটের বিশেষ নোট আছে
 }
 
-/// হোম: মার্কেট বাকি, আজকের রুটের অবস্থা, পরের ৩টি দোকান, মাসের টার্গেট
+/// হোম: মার্কেট বাকি, আজকের রুটের অবস্থা, পরের ৩টি দোকান, রিমাইন্ডার
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   Future<_Dash> _load() async {
     final db = AppDb.instance;
-    final now = DateTime.now();
-    final month = DateTime(now.year, now.month, 1);
-    final from = monthStart(month), to = monthEnd(month);
-
     final market = await db.activeMarket(selectedMarket.value);
     final route =
         market == null ? <Rec>[] : await db.route(market['id'] as int);
-    final off = int.tryParse(await db.getSetting('weekly_off') ?? '') ?? 5;
-    final t = await db.targetFor(monthKey(month));
+    final limit = staleDays.value;
 
     return _Dash(
       market: market,
       route: route,
       totalDue: await db.totalDue(),
-      sales: await db.sales(from, to),
-      collected: await db.collected(from, to),
-      salesTarget: (t?['sales'] as num?)?.toDouble() ?? 0,
-      collTarget: (t?['collection'] as num?)?.toDouble() ?? 0,
-      daysLeft: remainingWorkDays(off),
+      stale: limit > 0 ? await db.staleOutlets(limit) : <Rec>[],
+      noted: await db.notedOutlets(),
     );
   }
 
@@ -109,13 +99,12 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             children: [
               Text(market != null ? 'মার্কেট বাকির পরিমাণ' : 'মোট বাকির পরিমাণ',
-                  style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  style: tt.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 4),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(taka(marketDue),
-                    style: tt.displayMedium?.copyWith(
-                        fontWeight: FontWeight.w800, color: cs.onSurface)),
+                    style: tt.displayMedium?.copyWith(color: cs.onSurface)),
               ),
               const SizedBox(height: 4),
               Text('মোট দোকান - ${bn(total)} টি, বাকি দোকান - ${bn(pending.length)} টি',
@@ -168,57 +157,103 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
 
+        // ---- রিমাইন্ডার (থাকলে): দীর্ঘদিন ভিজিট নেই · বিশেষ নোট ----
+        if (d.stale.isNotEmpty || d.noted.isNotEmpty)
+          AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: Column(
+              children: [
+                if (d.stale.isNotEmpty)
+                  _ReminderTile(
+                    icon: Icons.history,
+                    color: const Color(0xFFB45309),
+                    text:
+                        '${bn(d.stale.length)}টি দোকানে ${bn(staleDays.value)} দিনের বেশি ভিজিট/এন্ট্রি নেই',
+                    onTap: () => _showList(context,
+                        'দীর্ঘদিন যাওয়া হয়নি', d.stale, stale: true),
+                  ),
+                if (d.stale.isNotEmpty && d.noted.isNotEmpty)
+                  const Divider(height: 1),
+                if (d.noted.isNotEmpty)
+                  _ReminderTile(
+                    icon: Icons.sticky_note_2_outlined,
+                    color: cs.tertiary,
+                    text: '${bn(d.noted.length)}টি দোকানে পরের ভিজিটের বিশেষ নোট আছে',
+                    onTap: () =>
+                        _showList(context, 'বিশেষ নোট', d.noted, stale: false),
+                  ),
+              ],
+            ),
+          ),
+
         // ---- বিস্তারিত বাটন ----
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           child: SizedBox(
-            height: 64,
+            height: 52,
             child: FilledButton(
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22)),
-                textStyle:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                    borderRadius: BorderRadius.circular(16)),
+                textStyle: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               onPressed: () => tabIndex.value = 1,
               child: const Text('বিস্তারিত'),
             ),
           ),
         ),
+      ],
+    );
+  }
 
-        // ---- মাসের টার্গেট ও অর্জন ----
-        AppCard(
+  void _showList(BuildContext context, String title, List<Rec> rows,
+      {required bool stale}) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints:
+              BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.7),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('এই মাসের টার্গেট ও অর্জন',
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-              const SizedBox(height: 10),
-              TargetBar(
-                  label: 'বিক্রি',
-                  achieved: d.sales,
-                  target: d.salesTarget,
-                  daysLeft: d.daysLeft),
-              const SizedBox(height: 14),
-              TargetBar(
-                  label: 'আদায়',
-                  achieved: d.collected,
-                  target: d.collTarget,
-                  daysLeft: d.daysLeft,
-                  color: const Color(0xFF138A9B)),
-              if (d.salesTarget <= 0 && d.collTarget <= 0)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () =>
-                        showTargetSheet(context, DateTime.now()),
-                    child: const Text('টার্গেট ঠিক করুন'),
-                  ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Text(title, style: Theme.of(ctx).textTheme.titleLarge),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final o in rows)
+                      ListTile(
+                        leading: GradeBadge(o['grade'] as String, size: 34),
+                        title: Text(o['name'] as String),
+                        subtitle: Text(stale
+                            ? '${o['market_name']} · ${bn(idleDays(o) ?? 0)} দিন ধরে নেই'
+                            : '${o['market_name']} · ${(o['next_note'] as String).trim()}'),
+                        trailing: Text(taka((o['due'] as num).toDouble()),
+                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    OutletDetail(id: o['id'] as int)),
+                          );
+                        },
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -262,17 +297,44 @@ class _NextTile extends StatelessWidget {
                 children: [
                   Text(r['name'] as String,
                       style: tt.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                          ?.copyWith(fontWeight: FontWeight.w600)),
                   Text(agoText(r['last_visit'] as String?),
                       style: tt.bodySmall),
+                  if (((r['next_note'] as String?) ?? '').trim().isNotEmpty)
+                    InfoLine(Icons.sticky_note_2_outlined,
+                        'নোট: ${(r['next_note'] as String).trim()}',
+                        color: Theme.of(context).colorScheme.tertiary),
                 ],
               ),
             ),
             Text(taka(due),
-                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ReminderTile extends StatelessWidget {
+  const _ReminderTile(
+      {required this.icon,
+      required this.color,
+      required this.text,
+      required this.onTap});
+  final IconData icon;
+  final Color color;
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, color: color),
+      title: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

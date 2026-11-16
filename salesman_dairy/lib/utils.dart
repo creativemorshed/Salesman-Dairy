@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'state.dart';
+
 const _bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 const bnMonths = [
   'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
@@ -12,6 +14,35 @@ const weekdayNames = [
   '', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার', 'রবিবার',
 ];
 const weekdayShort = ['', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি', 'রবি'];
+
+/// বার সাজানোর ক্রম: শনি, রবি, সোম … শুক্র
+const weekOrder = [6, 7, 1, 2, 3, 4, 5];
+
+/// মার্কেটগুলো বার অনুযায়ী সাজানো (শনিবারেরটা আগে … শুক্রবারেরটা শেষে,
+/// বার ঠিক করা না থাকলে সবার শেষে; একই বারে নামের ক্রমে)
+List<T> sortMarkets<T extends Map<String, Object?>>(List<T> list) {
+  int rank(T m) {
+    final days = (m['days'] as String? ?? '')
+        .split(',')
+        .where((e) => e.isNotEmpty)
+        .map(int.parse)
+        .toSet();
+    for (var i = 0; i < weekOrder.length; i++) {
+      if (days.contains(weekOrder[i])) return i;
+    }
+    return weekOrder.length;
+  }
+
+  final out = [...list];
+  out.sort((a, b) {
+    final c = rank(a).compareTo(rank(b));
+    if (c != 0) return c;
+    return (a['name'] as String)
+        .toLowerCase()
+        .compareTo((b['name'] as String).toLowerCase());
+  });
+  return out;
+}
 
 /// ইংরেজি সংখ্যাকে বাংলা সংখ্যায় রূপান্তর
 String bn(Object v) => v
@@ -48,14 +79,14 @@ String _group(String digits) {
   return '${parts.join(',')},$last3';
 }
 
-/// টাকার অংক: ৳5,00,000
+/// টাকার অংক: ৳৫,০০,০০০ (সব সংখ্যা বাংলায়, পুরো অ্যাপে একই ধরন)
 String taka(num v) {
   final neg = v < 0;
   final a = v.abs().toDouble();
   final isInt = (a - a.roundToDouble()).abs() < 0.005;
   final s = isInt ? a.round().toString() : a.toStringAsFixed(2);
   final p = s.split('.');
-  return '${neg ? '-' : ''}৳${_group(p[0])}${p.length > 1 ? '.${p[1]}' : ''}';
+  return bn('${neg ? '-' : ''}৳${_group(p[0])}${p.length > 1 ? '.${p[1]}' : ''}');
 }
 
 // ---- তারিখ (ডেটাবেসে yyyy-MM-dd হিসেবে থাকে) ----
@@ -101,13 +132,28 @@ String agoText(String? date) {
   return 'শেষ ভিজিট: ${bn(n)} দিন আগে';
 }
 
+/// শেষ ভিজিট/এন্ট্রির পর কত দিন গেছে (আউটলেট রেকর্ড থেকে); না থাকলে null
+int? idleDays(Map<String, Object?> o) {
+  final s = o['last_activity'] as String?;
+  if (s == null || s.isEmpty) return null;
+  return parseYmd(today()).difference(parseYmd(s)).inDays;
+}
+
+/// "১০ দিন ধরে ভিজিট/এন্ট্রি নেই" — সীমা পার হলে, নইলে null
+String? idleWarning(Map<String, Object?> o) {
+  final limit = staleDays.value;
+  final n = idleDays(o);
+  if (limit <= 0 || n == null || n < limit) return null;
+  return '${bn(n)} দিন ধরে ভিজিট/এন্ট্রি নেই';
+}
+
 /// মার্কেটের ভিজিটের দিন ("1,3,6" ফরম্যাটে সংরক্ষিত)
 bool hasDay(String days, int weekday) => days.split(',').contains('$weekday');
 
 String daysText(String days) {
   if (days.trim().isEmpty) return 'দিন ঠিক করা নেই';
-  final list = days.split(',').map(int.parse).toList()..sort();
-  return list.map((d) => weekdayShort[d]).join(', ');
+  final set = days.split(',').where((e) => e.isNotEmpty).map(int.parse).toSet();
+  return weekOrder.where(set.contains).map((d) => weekdayShort[d]).join(', ');
 }
 
 /// আজকসহ মাসের বাকি কর্মদিবস (সাপ্তাহিক ছুটির দিন বাদে; weeklyOff=0 মানে ছুটি নেই)

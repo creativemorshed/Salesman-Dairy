@@ -10,6 +10,7 @@ import '../db.dart';
 import '../lock.dart';
 import '../notifications.dart';
 import '../sheets.dart';
+import '../state.dart';
 import '../utils.dart';
 import 'expenses.dart';
 import 'markets.dart';
@@ -27,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hasPin = false;
   bool _bio = false;
   int _off = 5; // সাপ্তাহিক ছুটি (১=সোম…৭=রবি, ০=নেই)
+  int _stale = 7; // কত দিন ভিজিট/এন্ট্রি না থাকলে রিমাইন্ডার (০ = বন্ধ)
   TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
 
   @override
@@ -41,10 +43,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final h = int.tryParse(await db.getSetting('notif_hour') ?? '') ?? 8;
     final m = int.tryParse(await db.getSetting('notif_minute') ?? '') ?? 0;
     final off = int.tryParse(await db.getSetting('weekly_off') ?? '') ?? 5;
+    final stale = int.tryParse(await db.getSetting('stale_days') ?? '') ?? 7;
     final pin = await AppLock.instance.hasPin();
     final bio = await AppLock.instance.biometricEnabled();
     if (!mounted) return;
     setState(() {
+      _stale = stale;
       _notif = n != '0';
       _time = TimeOfDay(hour: h, minute: m);
       _off = off;
@@ -87,6 +91,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final db = AppDb.instance;
     await db.setSetting('notif_hour', '${t.hour}');
     await db.setSetting('notif_minute', '${t.minute}');
+    await _load();
+  }
+
+  Future<void> _setStale(int v) async {
+    await AppDb.instance.setSetting('stale_days', '$v');
+    staleDays.value = v;
+    await Reminders.instance.reschedule().catchError((_) {});
     await _load();
   }
 
@@ -229,6 +240,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   trailing: Text(_fmtTime(_time),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   onTap: _notif ? _pickTime : null,
+                ),
+                const ListTile(
+                  leading: Icon(Icons.history),
+                  title: Text('দোকানে যাওয়া হচ্ছে না — জানান'),
+                  subtitle: Text(
+                      'এত দিন কোনো ভিজিট/এন্ট্রি না থাকলে রিমাইন্ডার ও হোমে দেখাবে'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      for (final n in const [7, 10, 14, 0])
+                        ChoiceChip(
+                          label: Text(n == 0 ? 'বন্ধ' : '${bn(n)} দিন'),
+                          selected: _stale == n,
+                          onSelected: (_) => _setStale(n),
+                        ),
+                    ],
+                  ),
                 ),
                 _header('নিরাপত্তা'),
                 SwitchListTile(

@@ -28,7 +28,7 @@ class AppDb {
   Future<Database> _open() async {
     return openDatabase(
       await dbPath(),
-      version: 1,
+      version: 2,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, v) async {
         // মার্কেট: days = ভিজিটের বারগুলো ("1,3,6" = সোম, বুধ, শনি)
@@ -48,6 +48,7 @@ CREATE TABLE outlets(
   grade TEXT NOT NULL DEFAULT 'B',
   opening_due REAL NOT NULL DEFAULT 0,
   pay_reminder TEXT,
+  next_note TEXT,
   created_at TEXT NOT NULL
 )''');
         await db.execute('''
@@ -98,6 +99,12 @@ CREATE TABLE targets(
         await db.execute('CREATE INDEX i_vis_d ON visits(date)');
         await db.execute('CREATE INDEX i_exp_d ON expenses(date)');
       },
+      onUpgrade: (db, oldV, newV) async {
+        // v2: পরের ভিজিটের বিশেষ নোট
+        if (oldV < 2) {
+          await db.execute('ALTER TABLE outlets ADD COLUMN next_note TEXT');
+        }
+      },
     );
   }
 
@@ -109,6 +116,11 @@ o.*, m.name AS market_name,
   + IFNULL((SELECT SUM(amount) FROM sales s WHERE s.outlet_id=o.id),0)
   - IFNULL((SELECT SUM(amount) FROM collections c WHERE c.outlet_id=o.id),0)) AS due,
 (SELECT MAX(date) FROM visits v WHERE v.outlet_id=o.id) AS last_visit,
+MAX(
+  IFNULL((SELECT MAX(date) FROM visits v3 WHERE v3.outlet_id=o.id),''),
+  IFNULL((SELECT MAX(date) FROM sales s3 WHERE s3.outlet_id=o.id),''),
+  IFNULL((SELECT MAX(date) FROM collections c3 WHERE c3.outlet_id=o.id),''),
+  o.created_at) AS last_activity,
 EXISTS(SELECT 1 FROM visits v2 WHERE v2.outlet_id=o.id AND v2.date=?) AS visited_today''';
 
   static const _outletFrom =
@@ -125,15 +137,16 @@ m.*,
 $_marketDue AS due''';
 
   // ---------------- মার্কেট ----------------
-  Future<List<Rec>> markets() async => (await _d).rawQuery(
-      'SELECT $_marketCols FROM markets m ORDER BY m.name COLLATE NOCASE');
+  /// সবসময় বার অনুযায়ী সাজানো: শনিবার, রবিবার, সোমবার … শুক্রবার
+  Future<List<Rec>> markets() async => sortMarkets(await (await _d)
+      .rawQuery('SELECT $_marketCols FROM markets m'));
 
   /// নির্দিষ্ট বারে (১=সোম…৭=রবি) যেসব মার্কেটে যাওয়ার কথা
-  Future<List<Rec>> marketsOnDay(int weekday) async => (await _d).rawQuery(
-        "SELECT $_marketCols FROM markets m WHERE (',' || m.days || ',') LIKE ? "
-        'ORDER BY m.name COLLATE NOCASE',
+  Future<List<Rec>> marketsOnDay(int weekday) async => sortMarkets(
+      await (await _d).rawQuery(
+        "SELECT $_marketCols FROM markets m WHERE (',' || m.days || ',') LIKE ?",
         ['%,$weekday,%'],
-      );
+      ));
 
   /// হোম/রুটে দেখানোর মার্কেট: বাছাই করা → আজকের নির্ধারিত → প্রথমটা
   Future<Rec?> activeMarket(int? selectedId) async {
@@ -192,17 +205,17 @@ $_marketDue AS due''';
     return (await _d).rawQuery(
       'SELECT $_outletCols $_outletFrom '
       '${where.isEmpty ? '' : 'WHERE ${where.join(' AND ')}'} '
-      'ORDER BY o.name COLLATE NOCASE',
+      'ORDER BY (due <= 0), due DESC, o.name COLLATE NOCASE',
       args,
     );
   }
 
-  /// মার্কেটের রুট: আগে বাকি (ভিজিট হয়নি), তারপর গ্রেড A+→F, তারপর বেশি বাকি
+  /// মার্কেটের রুট: ভিজিট বাকিরা আগে; প্রত্যেক দলে বেশি বাকি আগে, বাকি ০ হলে সবার নিচে
   Future<List<Rec>> route(int marketId) async => (await _d).rawQuery(
         'SELECT $_outletCols $_outletFrom WHERE o.market_id=? '
-        'ORDER BY visited_today, '
+        'ORDER BY visited_today, (due <= 0), due DESC, '
         "CASE o.grade WHEN 'A+' THEN 0 WHEN 'A' THEN 1 WHEN 'F' THEN 3 ELSE 2 END, "
-        'due DESC, o.name COLLATE NOCASE',
+        'o.name COLLATE NOCASE',
         [today(), marketId],
       );
 
@@ -242,6 +255,22 @@ $_marketDue AS due''';
         'WHERE o.pay_reminder IS NOT NULL AND o.pay_reminder <= ?) '
         'WHERE due > 0 ORDER BY pay_reminder',
         [today(), date],
+      );
+
+  /// N দিন বা তার বেশি কোনো ভিজিট/বিক্রি/আদায় নেই এমন আউটলেট (সবচেয়ে পুরনো আগে)
+  Future<List<Rec>> staleOutlets(int days, {String? asOf}) async =>
+      (await _d).rawQuery(
+        'SELECT * FROM (SELECT $_outletCols $_outletFrom) '
+        "WHERE last_activity <= date(?, '-$days day') "
+        'ORDER BY last_activity, due DESC',
+        [today(), asOf ?? today()],
+      );
+
+  /// পরের ভিজিটের বিশেষ নোট আছে এমন আউটলেট
+  Future<List<Rec>> notedOutlets() async => (await _d).rawQuery(
+        'SELECT * FROM (SELECT $_outletCols $_outletFrom) '
+        "WHERE next_note IS NOT NULL AND next_note <> '' ORDER BY name",
+        [today()],
       );
 
   Future<List<Rec>> topDue(int limit) async => (await _d).rawQuery(
@@ -289,6 +318,7 @@ $_marketDue AS due''';
     double collected = 0,
     String note = '',
     String? payReminder,
+    String? nextNote,
   }) async {
     final d = await _d;
     await d.transaction((t) async {
@@ -306,7 +336,10 @@ $_marketDue AS due''';
           'note': note
         });
       }
-      await t.update('outlets', {'pay_reminder': payReminder},
+      // ভিজিট হয়ে গেলে আগের বিশেষ নোট শেষ; নতুন নোট (থাকলে) পরের ভিজিটের জন্য
+      final nn = (nextNote ?? '').trim();
+      await t.update(
+          'outlets', {'pay_reminder': payReminder, 'next_note': nn.isEmpty ? null : nn},
           where: 'id=?', whereArgs: [outletId]);
     });
     _bump();
@@ -399,7 +432,7 @@ $_marketDue AS due''';
 
   /// মার্কেট ভিত্তিক: মাসের বিক্রি, আদায় ও এখনকার মোট বাকি
   Future<List<Rec>> marketStats(String from, String to) async =>
-      (await _d).rawQuery(
+      sortMarkets(await (await _d).rawQuery(
         '''
 SELECT m.id, m.name,
  (SELECT IFNULL(SUM(s.amount),0) FROM sales s JOIN outlets o ON o.id=s.outlet_id
@@ -407,9 +440,9 @@ SELECT m.id, m.name,
  (SELECT IFNULL(SUM(c.amount),0) FROM collections c JOIN outlets o ON o.id=c.outlet_id
    WHERE o.market_id=m.id AND c.date>=? AND c.date<?) AS collected,
  $_marketDue AS due
-FROM markets m ORDER BY m.name COLLATE NOCASE''',
+FROM markets m''',
         [from, to, from, to],
-      );
+      ));
 
   // ---------------- টার্গেট ----------------
   /// ওই মাস বা তার আগের সর্বশেষ সেট করা টার্গেট (নতুন মাসে আগেরটাই চলে)

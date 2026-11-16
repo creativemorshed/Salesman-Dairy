@@ -141,6 +141,27 @@ class _View extends StatelessWidget {
                           onPressed: () => openWhatsApp(context, phone)),
                     ],
                   ]),
+                  if (_s('next_note').trim().isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: cs.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(children: [
+                        Icon(Icons.notifications_active_outlined,
+                            size: 18, color: cs.onTertiaryContainer),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text('পরের ভিজিটে মনে রাখুন: ${_s('next_note').trim()}',
+                              style: TextStyle(color: cs.onTertiaryContainer)),
+                        ),
+                      ]),
+                    ),
+                  if (idleWarning(o) != null)
+                    InfoLine(Icons.history, idleWarning(o)!,
+                        color: const Color(0xFFB45309)),
                   for (final (icon, text) in info)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -203,7 +224,7 @@ class _View extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(value,
               style: tt.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w800, color: color)),
+                  ?.copyWith(fontWeight: FontWeight.w700, color: color)),
         ),
         Text(label, style: tt.bodySmall, textAlign: TextAlign.center),
       ]),

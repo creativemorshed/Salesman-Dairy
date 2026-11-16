@@ -27,7 +27,7 @@ class _Prog {
   final Map<int, double> daily; // মাসের দিন → বিক্রি
 }
 
-/// প্রগ্রেস: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রি, মার্কেট অনুযায়ী হিসাব, বেশি বাকি
+/// এক নজরে: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রি, মার্কেট অনুযায়ী হিসাব, বেশি বাকি
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
@@ -77,7 +77,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('প্রগ্রেস')),
+      appBar: AppBar(title: const Text('এক নজরে')),
       body: DbBuilder<_Prog>(
         load: _load,
         builder: (context, d) {
@@ -178,7 +178,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         ),
                         Text('বাকি ${taka(m['due'] as num)}',
                             style: TextStyle(
-                                color: cs.error, fontWeight: FontWeight.w800)),
+                                color: cs.error, fontWeight: FontWeight.w700)),
                       ]),
                       const SizedBox(height: 4),
                       Text(
@@ -217,7 +217,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     ),
                     Text(taka(o['due'] as num),
                         style: TextStyle(
-                            color: cs.error, fontWeight: FontWeight.w800)),
+                            color: cs.error, fontWeight: FontWeight.w700)),
                   ]),
                 ),
 

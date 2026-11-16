@@ -128,7 +128,7 @@ class _EntryList extends StatelessWidget {
           ),
           Text(taka(r['amount'] as num),
               style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isColl ? Colors.green : null)),
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 20),
@@ -152,7 +152,7 @@ class _EntryList extends StatelessWidget {
             Text(isColl ? 'এই মাসের মোট আদায়' : 'এই মাসের মোট বিক্রি'),
             const Spacer(),
             Text(taka(total),
-                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
           ]),
         ),
         Expanded(

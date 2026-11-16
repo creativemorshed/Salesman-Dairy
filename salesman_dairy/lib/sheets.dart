@@ -21,7 +21,6 @@ Future<T?> _sheet<T>(BuildContext context, Widget child) {
 const _numKb = TextInputType.numberWithOptions(decimal: true);
 
 // সপ্তাহের ক্রম (বাংলাদেশ): শনি থেকে শুক্র
-const weekOrder = [6, 7, 1, 2, 3, 4, 5];
 
 // =====================================================================
 // মার্কেট যোগ / এডিট (নাম + কোন কোন বারে ভিজিট)
@@ -366,6 +365,7 @@ class _VisitFormState extends State<_VisitForm> {
   final _sale = TextEditingController();
   final _coll = TextEditingController();
   final _note = TextEditingController();
+  final _nextNote = TextEditingController();
   late String? _reminder = widget.outlet['pay_reminder'] as String?;
 
   double get _due => (widget.outlet['due'] as num).toDouble();
@@ -376,6 +376,7 @@ class _VisitFormState extends State<_VisitForm> {
     _sale.dispose();
     _coll.dispose();
     _note.dispose();
+    _nextNote.dispose();
     super.dispose();
   }
 
@@ -391,6 +392,7 @@ class _VisitFormState extends State<_VisitForm> {
       collected: parseNum(_coll.text),
       note: _note.text.trim(),
       payReminder: _reminder,
+      nextNote: _nextNote.text,
     );
     if (mounted) Navigator.pop(context);
   }
@@ -444,6 +446,10 @@ class _VisitFormState extends State<_VisitForm> {
           onChanged: (v) => setState(() => _reminder = v),
         ),
         const SizedBox(height: 12),
+        NextNoteField(
+            existing: widget.outlet['next_note'] as String?,
+            controller: _nextNote),
+        const SizedBox(height: 12),
         FilledButton(onPressed: _save, child: const Text('এন্ট্রি সংরক্ষণ')),
       ],
     );
@@ -466,11 +472,13 @@ class _QuickVisitForm extends StatefulWidget {
 
 class _QuickVisitFormState extends State<_QuickVisitForm> {
   final _note = TextEditingController();
+  final _nextNote = TextEditingController();
   late String? _reminder = widget.outlet['pay_reminder'] as String?;
 
   @override
   void dispose() {
     _note.dispose();
+    _nextNote.dispose();
     super.dispose();
   }
 
@@ -480,6 +488,7 @@ class _QuickVisitFormState extends State<_QuickVisitForm> {
       date: today(),
       note: _note.text.trim(),
       payReminder: _reminder,
+      nextNote: _nextNote.text,
     );
     if (mounted) Navigator.pop(context);
   }
@@ -507,6 +516,10 @@ class _QuickVisitFormState extends State<_QuickVisitForm> {
           value: _reminder,
           onChanged: (v) => setState(() => _reminder = v),
         ),
+        const SizedBox(height: 12),
+        NextNoteField(
+            existing: widget.outlet['next_note'] as String?,
+            controller: _nextNote),
         const SizedBox(height: 12),
         FilledButton(onPressed: _save, child: const Text('ভিজিট সংরক্ষণ')),
       ],
@@ -892,6 +905,57 @@ class _OutletPickerState extends State<_OutletPicker> {
                         );
                       },
                     ),
+        ),
+      ],
+    );
+  }
+}
+
+
+/// "পরের ভিজিটে মনে রাখার বিশেষ নোট": আগের নোট দেখায় (এই ভিজিটে কাজ হলো কিনা বোঝার জন্য)
+/// এবং পরের ভিজিটের জন্য নতুন নোট লেখার ঘর। সংরক্ষণ করলে আগের নোট মুছে নতুনটা বসে।
+class NextNoteField extends StatelessWidget {
+  const NextNoteField({super.key, required this.existing, required this.controller});
+  final String? existing;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final has = existing != null && existing!.trim().isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (has)
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.tertiaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.sticky_note_2_outlined,
+                    size: 20, color: cs.onTertiaryContainer),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('আগের নোট: ${existing!.trim()}',
+                      style: TextStyle(color: cs.onTertiaryContainer)),
+                ),
+              ],
+            ),
+          ),
+        TextField(
+          controller: controller,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: 'পরের ভিজিটের জন্য বিশেষ নোট (ঐচ্ছিক)',
+            helperText: has
+                ? 'সংরক্ষণ করলে আগের নোট মুছে এটা থাকবে'
+                : 'পরের বার এই দোকানে গেলে রিমাইন্ডার হিসেবে দেখাবে',
+          ),
         ),
       ],
     );

@@ -381,3 +381,35 @@ class TargetBar extends StatelessWidget {
     );
   }
 }
+
+/// কার্ডের ভেতরে ছোট সতর্কবার্তা/নোট লাইন (আইকন + লেখা)
+class InfoLine extends StatelessWidget {
+  const InfoLine(this.icon, this.text, {super.key, required this.color});
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(text,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: color, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+}

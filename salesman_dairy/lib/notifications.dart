@@ -94,15 +94,9 @@ class Reminders {
     final minute = int.tryParse(await db.getSetting('notif_minute') ?? '') ?? 0;
     final off = int.tryParse(await db.getSetting('weekly_off') ?? '') ?? 5;
 
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'daily_tasks',
-        'দৈনিক কাজের রিমাইন্ডার',
-        channelDescription: 'আজকের ভিজিট ও টাকা চাওয়ার রিমাইন্ডার',
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-    );
+    final staleLimit =
+        int.tryParse(await db.getSetting('stale_days') ?? '') ?? 7;
+    final noted = await db.notedOutlets();
 
     final now = tz.TZDateTime.now(tz.local);
     for (var i = 0; i < _days; i++) {
@@ -118,19 +112,48 @@ class Reminders {
       final shops =
           markets.fold<int>(0, (s, m) => s + (m['outlet_count'] as int));
       final promises = (await db.promises(date)).length;
-      if (shops == 0 && promises == 0) continue;
+      // ওই দিনের হিসাবে: যেসব দোকানে সীমার বেশি দিন ভিজিট/এন্ট্রি নেই
+      final stale = staleLimit > 0
+          ? (await db.staleOutlets(staleLimit, asOf: date)).length
+          : 0;
+      // ওই দিনের মার্কেটগুলোর দোকানে পরের ভিজিটের বিশেষ নোট
+      final marketIds = markets.map((m) => m['id']).toSet();
+      final todayNotes =
+          noted.where((o) => marketIds.contains(o['market_id'])).toList();
+      if (shops == 0 && promises == 0 && stale == 0 && todayNotes.isEmpty) {
+        continue;
+      }
 
       final parts = <String>[
         if (shops > 0)
           '${markets.map((m) => m['name']).join(', ')} মার্কেটে ${bn(shops)}টি দোকানে ভিজিট',
         if (promises > 0) '${bn(promises)}টি দোকান থেকে টাকা নেওয়ার তারিখ',
+        if (stale > 0)
+          '${bn(stale)}টি দোকানে ${bn(staleLimit)} দিনের বেশি ভিজিট/এন্ট্রি নেই',
+        if (todayNotes.isNotEmpty)
+          '${bn(todayNotes.length)}টি দোকানে বিশেষ নোট আছে',
       ];
+      // বড় করে খুললে প্রতিটি নোট দোকানের নামসহ দেখা যাবে
+      final big = [
+        ...parts,
+        for (final o in todayNotes.take(5))
+          '• ${o['name']}: ${(o['next_note'] as String).trim()}',
+      ].join('\n');
       await _plugin.zonedSchedule(
         1000 + i,
         'আজকের কাজ',
-        parts.join(', '),
+        parts.join(' · '),
         at,
-        details,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'daily_tasks',
+            'দৈনিক কাজের রিমাইন্ডার',
+            channelDescription: 'আজকের ভিজিট, টাকা চাওয়া ও বিশেষ নোটের রিমাইন্ডার',
+            importance: Importance.high,
+            priority: Priority.high,
+            styleInformation: BigTextStyleInformation(big),
+          ),
+        ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
