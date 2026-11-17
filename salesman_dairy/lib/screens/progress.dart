@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../db.dart';
-import '../sheets.dart';
 import '../utils.dart';
 import '../widgets.dart';
 import 'expenses.dart';
@@ -20,11 +19,13 @@ class _Prog {
     required this.markets,
     required this.top,
     required this.daily,
+    required this.dailyColl,
   });
   final double sales, collected, spent, commission, special, target;
   final int daysLeft;
   final List<Rec> markets, top;
   final Map<int, double> daily; // মাসের দিন → বিক্রি
+  final Map<int, double> dailyColl; // মাসের দিন → আদায়
 }
 
 /// এক নজরে: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রি, মার্কেট অনুযায়ী হিসাব, বেশি বাকি
@@ -51,6 +52,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
       daily[day] = (daily[day] ?? 0) + (r['amount'] as num).toDouble();
     }
 
+    final collRows = await db.entriesBetween('collections', from, to);
+    final dailyColl = <int, double>{};
+    for (final r in collRows) {
+      final day = parseYmd(r['date'] as String).day;
+      dailyColl[day] = (dailyColl[day] ?? 0) + (r['amount'] as num).toDouble();
+    }
+
     final now = DateTime.now();
     final cur = DateTime(now.year, now.month, 1);
     final daysLeft = _m.isBefore(cur)
@@ -69,6 +77,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       markets: await db.marketStats(from, to),
       top: await db.topDue(10),
       daily: daily,
+      dailyColl: dailyColl,
     );
   }
 
@@ -141,17 +150,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 ]),
               ),
 
-              // ---- দিনভিত্তিক বিক্রি ----
+              // ---- বিক্রয় vs কালেকশন (প্রতিদিন পাশাপাশি দুটি ক্যান্ডল) ----
               AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('দিনভিত্তিক বিক্রি',
-                        style:
-                            tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-                    const SizedBox(height: 10),
-                    _DailyBars(data: d.daily, days: daysInMonth),
-                  ],
+                child: _DailyPairs(
+                  key: ValueKey(monthKey(_m)),
+                  sales: d.daily,
+                  coll: d.dailyColl,
+                  month: _m,
+                  days: daysInMonth,
                 ),
               ),
 
@@ -220,11 +226,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const ExpensesScreen())),
-                child: const Row(children: [
-                  Icon(Icons.receipt_long_outlined),
-                  SizedBox(width: 12),
-                  Expanded(child: Text('আমার খরচ (যাতায়াত, খাবার, মোবাইল বিল…)')),
-                  Icon(Icons.chevron_right),
+                child: Row(children: [
+                  const Icon(Icons.receipt_long_outlined),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('আমার খরচ (যাবতীয় খরচসমূহ...)',
+                        style: tt.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700)),
+                  ),
+                  const Icon(Icons.chevron_right),
                 ]),
               ),
             ],
@@ -235,65 +245,164 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-/// ছোট বার চার্ট: মাসের প্রতিদিনের বিক্রি
-class _DailyBars extends StatelessWidget {
-  const _DailyBars({required this.data, required this.days});
-  final Map<int, double> data;
+/// বিক্রয় vs কালেকশন: প্রতিদিনের জন্য পাশাপাশি দুটি আলাদা ক্যান্ডল।
+/// পাশে স্ক্রল করা যায়; কোনো দিনে চাপলে ওই দিনের হিসাব ওপরে দেখায়।
+class _DailyPairs extends StatefulWidget {
+  const _DailyPairs(
+      {super.key,
+      required this.sales,
+      required this.coll,
+      required this.month,
+      required this.days});
+  final Map<int, double> sales, coll;
+  final DateTime month;
   final int days;
+
+  @override
+  State<_DailyPairs> createState() => _DailyPairsState();
+}
+
+class _DailyPairsState extends State<_DailyPairs> {
+  static const _slot = 26.0;
+  static const _salesColor = Color(0xFFD9480F);
+  static const _collColor = Color(0xFF138A9B);
+  late final ScrollController _sc;
+  int? _sel;
+
+  int? get _todayDay {
+    final n = DateTime.now();
+    return (n.year == widget.month.year && n.month == widget.month.month)
+        ? n.day
+        : null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // চলতি মাসে আজকের দিনটা যেন দেখা যায়
+    final t = _todayDay ?? 1;
+    _sc = ScrollController(
+        initialScrollOffset: ((t - 6) * _slot).clamp(0.0, double.infinity));
+  }
+
+  @override
+  void dispose() {
+    _sc.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     var maxV = 0.0;
-    for (final v in data.values) {
+    for (final v in [...widget.sales.values, ...widget.coll.values]) {
       if (v > maxV) maxV = v;
     }
-    if (maxV == 0) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(child: Text('এই মাসে এখনো কোনো বিক্রি নেই')),
-      );
-    }
-    return SizedBox(
-      height: 120,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (var day = 1; day <= days; day++)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      height: 2 + 80 * ((data[day] ?? 0) / maxV),
-                      decoration: BoxDecoration(
-                        color: (data[day] ?? 0) > 0
-                            ? cs.primary
-                            : cs.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
+
+    Widget dot(Color c, String t) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+          const SizedBox(width: 5),
+          Text(t, style: tt.bodySmall),
+        ]);
+
+    final sel = _sel;
+    final info = sel == null
+        ? 'কোনো দিনে চাপলে ওই দিনের হিসাব দেখুন'
+        : '${bn(sel)} ${monthTitle(widget.month).split(' ').first} — '
+            'বিক্রয় ${taka(widget.sales[sel] ?? 0)} · কালেকশন ${taka(widget.coll[sel] ?? 0)}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Expanded(
+            child: Text('বিক্রয় vs কালেকশন',
+                style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          ),
+          dot(_salesColor, 'বিক্রয়'),
+          const SizedBox(width: 12),
+          dot(_collColor, 'কালেকশন'),
+        ]),
+        const SizedBox(height: 8),
+        Text(info,
+            style: tt.bodySmall?.copyWith(
+                fontWeight: sel == null ? FontWeight.w400 : FontWeight.w700)),
+        const SizedBox(height: 10),
+        if (maxV == 0)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: Text('এই মাসে এখনো কোনো বিক্রয় বা কালেকশন নেই')),
+          )
+        else
+          SizedBox(
+            height: 132,
+            child: SingleChildScrollView(
+              controller: _sc,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var day = 1; day <= widget.days; day++)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => _sel = day),
+                      child: Container(
+                        width: _slot,
+                        decoration: BoxDecoration(
+                          color: _sel == day
+                              ? cs.primaryContainer.withValues(alpha: 0.5)
+                              : null,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _bar(widget.sales[day] ?? 0, maxV, _salesColor),
+                                const SizedBox(width: 2),
+                                _bar(widget.coll[day] ?? 0, maxV, _collColor),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(bn(day),
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    height: 1.2,
+                                    fontWeight: day == _todayDay
+                                        ? FontWeight.w700
+                                        : FontWeight.w400,
+                                    color: day == _todayDay
+                                        ? cs.primary
+                                        : cs.onSurfaceVariant)),
+                            const SizedBox(height: 2),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 14,
-                      child: (day == 1 || day % 5 == 0)
-                          ? FittedBox(
-                              child: Text(bn(day),
-                                  style: const TextStyle(fontSize: 9)))
-                          : null,
-                    ),
-                  ],
-                ),
+                ],
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
-}
 
+  Widget _bar(double v, double maxV, Color c) => Container(
+        width: 8,
+        height: v > 0 ? 3 + 92 * (v / maxV) : 2,
+        decoration: BoxDecoration(
+          color: v > 0 ? c : c.withValues(alpha: 0.25),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+        ),
+      );
+}
 
 /// টার্গেট: বড় সংখ্যা → একটা বারে দুই রঙ (বিক্রয় / আদায়) → বাকি → সময় ও দৈনিক লাগবে
 class _TargetBlock extends StatelessWidget {
@@ -311,27 +420,8 @@ class _TargetBlock extends StatelessWidget {
     final collLeft =
         (d.target - d.collected).clamp(0, double.infinity).toDouble();
 
-    String timeLine;
-    if (salesLeft <= 0) {
-      timeLine = 'বিক্রয়ের টার্গেট পূর্ণ! 🎉';
-    } else if (d.daysLeft <= 0) {
-      timeLine = 'মাস শেষ';
-    } else {
-      timeLine =
-          'আরও সময় আছে ${bn(d.daysLeft)} দিন | দৈনিক বিক্রয় লাগবে ${taka((salesLeft / d.daysLeft).ceil())}';
-    }
-
-    Widget left(Color c, String text) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(text, style: tt.bodyMedium),
-          ],
-        );
+    final timeLine =
+        d.daysLeft <= 0 ? 'মাস শেষ' : 'অবশিষ্ট সময় আছে ${bn(d.daysLeft)} দিন';
 
     return Column(
       children: [
@@ -342,23 +432,28 @@ class _TargetBlock extends StatelessWidget {
                   ?.copyWith(fontSize: 28, fontWeight: FontWeight.w700)),
         ),
         const SizedBox(height: 12),
-        _DualBar(
+        _OverlayBar(
             sales: d.sales / d.target,
             collected: d.collected / d.target,
             salesColor: salesColor,
             collColor: collColor,
             track: cs.surfaceContainerHighest),
         const SizedBox(height: 10),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 16,
-          runSpacing: 4,
-          children: [
-            left(salesColor, 'বিক্রয় এখনও বাকি ${taka(salesLeft)}'),
-            left(collColor, 'নগদ কালেকশন বাকি ${taka(collLeft)}'),
-          ],
+        // এক লাইনে (ছোট স্ক্রিনে লেখা নিজে ছোট হয়ে আঁটে)
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text.rich(
+            TextSpan(style: tt.bodyMedium, children: [
+              const TextSpan(text: '● ', style: TextStyle(color: salesColor)),
+              TextSpan(text: 'বিক্রয় বাকি ${taka(salesLeft)}'),
+              const TextSpan(text: '  |  '),
+              const TextSpan(text: '● ', style: TextStyle(color: collColor)),
+              TextSpan(text: 'কালেকশন বাকি ${taka(collLeft)}'),
+            ]),
+            maxLines: 1,
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(timeLine,
             textAlign: TextAlign.center,
             style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
@@ -367,9 +462,9 @@ class _TargetBlock extends StatelessWidget {
   }
 }
 
-/// একটাই গোল বার, ভেতরে দুই লেন: ওপরে বিক্রয় (কমলা), নিচে আদায় (সবুজ-নীল)
-class _DualBar extends StatelessWidget {
-  const _DualBar(
+/// একটাই গোল বার, ওপর-নিচ ওভারলে: বড় অংশটা নিচে, ছোটটা তার ওপরে — দুটোই দেখা যায়
+class _OverlayBar extends StatelessWidget {
+  const _OverlayBar(
       {required this.sales,
       required this.collected,
       required this.salesColor,
@@ -380,22 +475,21 @@ class _DualBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget lane(double f, Color c) => LayoutBuilder(
-          builder: (context, box) => Stack(children: [
-            Container(height: 10, color: track),
-            Container(
-                height: 10,
-                width: box.maxWidth * f.clamp(0.0, 1.0),
-                color: c),
-          ]),
-        );
+    final s = sales.clamp(0.0, 1.0), c = collected.clamp(0.0, 1.0);
+    final salesFirst = s >= c; // বড়টা আগে আঁকি
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Column(children: [
-        lane(sales, salesColor),
-        const SizedBox(height: 2),
-        lane(collected, collColor),
-      ]),
+      borderRadius: BorderRadius.circular(9),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          Widget fill(double f, Color col) =>
+              Container(height: 18, width: box.maxWidth * f, color: col);
+          return Stack(children: [
+            Container(height: 18, color: track),
+            fill(salesFirst ? s : c, salesFirst ? salesColor : collColor),
+            fill(salesFirst ? c : s, salesFirst ? collColor : salesColor),
+          ]);
+        },
+      ),
     );
   }
 }

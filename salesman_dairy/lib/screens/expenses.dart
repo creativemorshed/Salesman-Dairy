@@ -50,41 +50,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     Expanded(
                       child: rows.isEmpty
                           ? const EmptyNote('এই মাসে কোনো খরচ নেই')
-                          : ListView.builder(
-                              padding: const EdgeInsets.only(bottom: 96),
-                              itemCount: rows.length,
-                              itemBuilder: (context, i) {
-                                final e = rows[i];
-                                final note = (e['note'] as String?) ?? '';
-                                return ListTile(
-                                  title: Text(e['category'] as String),
-                                  subtitle: Text([
-                                    niceDate(e['date'] as String),
-                                    if (note.isNotEmpty) note
-                                  ].join(' · ')),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(taka(e['amount'] as num),
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold)),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline,
-                                            size: 20),
-                                        onPressed: () async {
-                                          if (await confirm(context,
-                                              'এই খরচ মুছে ফেলবেন?',
-                                              yes: 'মুছুন')) {
-                                            await AppDb.instance.deleteRow(
-                                                'expenses', e['id'] as int);
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                          : _byDay(context, rows),
                     ),
                   ],
                 );
@@ -93,6 +59,80 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// প্রতিদিনের খরচ আলাদা কার্ডে: তারিখ হেডিং, খরচের বিস্তারিত, দিনের মোট
+  Widget _byDay(BuildContext context, List<Rec> rows) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final days = <String, List<Rec>>{};
+    for (final r in rows) {
+      days.putIfAbsent(r['date'] as String, () => []).add(r);
+    }
+    final keys = days.keys.toList()..sort((a, b) => b.compareTo(a));
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 96, top: 4),
+      itemCount: keys.length,
+      itemBuilder: (context, i) {
+        final date = keys[i];
+        final list = days[date]!;
+        final sum = list.fold<double>(
+            0, (s, r) => s + (r['amount'] as num).toDouble());
+        return AppCard(
+          margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                    '${niceDate(date)} · ${weekdayShort[parseYmd(date).weekday]}',
+                    style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(height: 4),
+              for (final e in list)
+                Row(children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(e['category'] as String, style: tt.bodyLarge),
+                        if (((e['note'] as String?) ?? '').trim().isNotEmpty)
+                          Text((e['note'] as String).trim(),
+                              style: tt.bodySmall
+                                  ?.copyWith(color: cs.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                  Text(taka(e['amount'] as num), style: tt.titleSmall),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    onPressed: () async {
+                      if (await confirm(context, 'এই খরচ মুছে ফেলবেন?',
+                          yes: 'মুছুন')) {
+                        await AppDb.instance.deleteRow('expenses', e['id'] as int);
+                      }
+                    },
+                  ),
+                ]),
+              const Divider(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 4),
+                child: Row(children: [
+                  Text('মোট খরচ',
+                      style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  Text(taka(sum),
+                      style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700, color: cs.error)),
+                ]),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
