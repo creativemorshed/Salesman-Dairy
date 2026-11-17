@@ -180,7 +180,7 @@ class MonthBar extends StatelessWidget {
       );
 }
 
-/// রিমাইন্ডার তারিখ বাছাই: কয়েক দিন পর / ক্যালেন্ডার / নাই
+/// রিমাইন্ডার তারিখ বাছাই: নাই · ৭ দিন পর · আইকন + তারিখ (ক্যালেন্ডার)
 class ReminderField extends StatelessWidget {
   const ReminderField({
     super.key,
@@ -195,32 +195,36 @@ class ReminderField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final in7 = afterDays(7);
+    final custom = value != null && value != in7;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label: ${value == null ? 'নাই' : niceDate(value)}',
-            style: Theme.of(context).textTheme.titleSmall),
+        Text(label, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
           runSpacing: 4,
           children: [
-            for (final n in [3, 7, 15, 30])
-              ActionChip(
-                label: Text('${bn(n)} দিন পর'),
-                onPressed: () => onChanged(afterDays(n)),
-              ),
-            ActionChip(
+            ChoiceChip(
+              label: const Text('নাই'),
+              selected: value == null,
+              onSelected: (_) => onChanged(null),
+            ),
+            ChoiceChip(
+              label: const Text('৭ দিন পর'),
+              selected: value == in7,
+              onSelected: (_) => onChanged(in7),
+            ),
+            ChoiceChip(
               avatar: const Icon(Icons.calendar_month, size: 18),
-              label: const Text('তারিখ'),
-              onPressed: () async {
+              label: Text(custom ? niceDate(value) : 'তারিখ'),
+              selected: custom,
+              showCheckmark: false,
+              onSelected: (_) async {
                 final d = await pickDate(context, initial: value);
                 if (d != null) onChanged(d);
               },
-            ),
-            ActionChip(
-              label: const Text('নাই'),
-              onPressed: () => onChanged(null),
             ),
           ],
         ),
@@ -254,12 +258,11 @@ class GradeBadge extends StatelessWidget {
   }
 }
 
-/// "মার্কেটঃ- চন্দনাইশ" চিপ — চাপলে মার্কেট বদলানো যায়
+/// "চন্দনাইশ" চিপ — চাপলে রুট বদলানো যায়
 class MarketChip extends StatelessWidget {
   const MarketChip(
-      {super.key, required this.name, required this.onTap, this.showPrefix = true});
+      {super.key, required this.name, required this.onTap});
   final String? name;
-  final bool showPrefix;
   final VoidCallback onTap;
 
   @override
@@ -267,9 +270,7 @@ class MarketChip extends StatelessWidget {
     return ActionChip(
       avatar: const Icon(Icons.store_mall_directory_outlined, size: 18),
       label: Text(
-          name == null
-              ? 'মার্কেট বাছুন'
-              : (showPrefix ? 'মার্কেটঃ- $name' : name!),
+          name ?? 'রুট পছন্দ করুন',
           maxLines: 1,
           overflow: TextOverflow.ellipsis),
       onPressed: onTap,

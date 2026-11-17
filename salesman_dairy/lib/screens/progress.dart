@@ -28,7 +28,7 @@ class _Prog {
   final Map<int, double> dailyColl; // মাসের দিন → আদায়
 }
 
-/// এক নজরে: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রি, মার্কেট অনুযায়ী হিসাব, বেশি বাকি
+/// এক নজরে: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রি, রুট অনুযায়ী হিসাব, বেশি বাকি
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
@@ -161,9 +161,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 ),
               ),
 
-              // ---- মার্কেট অনুযায়ী ----
-              const SectionTitle('মার্কেট অনুযায়ী হিসাব'),
-              if (d.markets.isEmpty) const EmptyNote('এখনো কোনো মার্কেট নেই'),
+              // ---- রুট অনুযায়ী ----
+              const SectionTitle('রুট অনুযায়ী হিসাব'),
+              if (d.markets.isEmpty) const EmptyNote('এখনো কোনো রুট নেই'),
               for (final m in d.markets)
                 AppCard(
                   margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),

@@ -71,15 +71,22 @@ class DashboardScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
-        // ---- উপরের সারি: তারিখ · মার্কেট · সেটিংস ----
+        // ---- উপরের সারি: তারিখ · রুট · সেটিংস ----
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
           child: Row(
             children: [
               Expanded(
-                child: Text(todayHeading(),
-                    style: tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(todayHeading(),
+                      maxLines: 1,
+                      style:
+                          tt.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
+                ),
               ),
+              const SizedBox(width: 8),
               MarketChip(
                   name: market?['name'] as String?,
                   onTap: () => showMarketPicker(context)),
@@ -93,7 +100,7 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
 
-        // ---- বাকির কার্ড: সর্বমোট বাকি + এই রুটের (নির্বাচিত মার্কেটের) বাকি ----
+        // ---- বাকির কার্ড: সর্বমোট বাকি + এই রুটের (নির্বাচিত রুটের) বাকি ----
         AppCard(
           margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
@@ -148,10 +155,10 @@ class DashboardScreen extends StatelessWidget {
                   style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 8),
               if (market == null)
-                _hint(context, 'প্রথমে একটি মার্কেট যোগ করুন',
-                    'মার্কেট যোগ করুন', () => showMarketSheet(context))
+                _hint(context, 'প্রথমে একটি রুট যোগ করুন',
+                    'রুট যোগ করুন', () => showMarketSheet(context))
               else if (total == 0)
-                _hint(context, 'এই মার্কেটে এখনো কোনো আউটলেট নেই',
+                _hint(context, 'এই রুটে এখনো কোনো আউটলেট নেই',
                     'আউটলেট যোগ করুন',
                     () => showOutletSheet(context,
                         marketId: market['id'] as int))

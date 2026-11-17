@@ -62,9 +62,10 @@ class _View extends StatelessWidget {
     final reminder = o['pay_reminder'] as String?;
 
     final info = <(IconData, String)>[
-      if (_s('owner').isNotEmpty) (Icons.person_outline, _s('owner')),
+      if (_s('owner').isNotEmpty) (Icons.person_outline, 'মালিক: ${_s('owner')}'),
+      if (_s('manager').isNotEmpty) (Icons.badge_outlined, 'ম্যানেজার: ${_s('manager')}'),
       if (phone.isNotEmpty) (Icons.phone, phone),
-      if (_s('address').isNotEmpty) (Icons.place_outlined, _s('address')),
+      if (_s('address').isNotEmpty) (Icons.place_outlined, 'বাজার: ${_s('address')}'),
       if (_s('note').isNotEmpty) (Icons.sticky_note_2_outlined, _s('note')),
     ];
 
@@ -109,7 +110,7 @@ class _View extends StatelessWidget {
                 child: FilledButton.icon(
                   icon: const Icon(Icons.check),
                   label: const Text('ভিজিট', softWrap: false),
-                  onPressed: () => showQuickVisitSheet(context, o),
+                  onPressed: () => quickVisit(context, o),
                 ),
               ),
             ]),
@@ -127,7 +128,7 @@ class _View extends StatelessWidget {
                     GradeBadge(_s('grade'), size: 40),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text('মার্কেট: ${_s('market_name')}',
+                      child: Text('রুট: ${_s('market_name')}',
                           style: tt.titleSmall),
                     ),
                     if (phone.isNotEmpty) ...[

@@ -107,7 +107,7 @@ class Reminders {
       if (at.weekday == off) continue; // সাপ্তাহিক ছুটির দিনে রিমাইন্ডার নেই
 
       final date = ymd(at);
-      // ওই বারে যেসব মার্কেটে যাওয়ার কথা + টাকা দেওয়ার তারিখ হয়ে যাওয়া আউটলেট
+      // ওই বারে যেসব রুটে যাওয়ার কথা + টাকা দেওয়ার তারিখ হয়ে যাওয়া আউটলেট
       final markets = await db.marketsOnDay(at.weekday);
       final shops =
           markets.fold<int>(0, (s, m) => s + (m['outlet_count'] as int));
@@ -116,7 +116,7 @@ class Reminders {
       final stale = staleLimit > 0
           ? (await db.staleOutlets(staleLimit, asOf: date)).length
           : 0;
-      // ওই দিনের মার্কেটগুলোর দোকানে পরের ভিজিটের বিশেষ নোট
+      // ওই দিনের রুটগুলোর দোকানে পরের ভিজিটের বিশেষ নোট
       final marketIds = markets.map((m) => m['id']).toSet();
       final todayNotes =
           noted.where((o) => marketIds.contains(o['market_id'])).toList();
@@ -126,7 +126,7 @@ class Reminders {
 
       final parts = <String>[
         if (shops > 0)
-          '${markets.map((m) => m['name']).join(', ')} মার্কেটে ${bn(shops)}টি দোকানে ভিজিট',
+          '${markets.map((m) => m['name']).join(', ')} রুটে ${bn(shops)}টি দোকানে ভিজিট',
         if (promises > 0) '${bn(promises)}টি দোকান থেকে টাকা নেওয়ার তারিখ',
         if (stale > 0)
           '${bn(stale)}টি দোকানে ${bn(staleLimit)} দিনের বেশি ভিজিট/এন্ট্রি নেই',

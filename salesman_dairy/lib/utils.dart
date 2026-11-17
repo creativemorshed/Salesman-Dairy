@@ -18,7 +18,7 @@ const weekdayShort = ['', 'সোম', 'মঙ্গল', 'বুধ', 'বৃ�
 /// বার সাজানোর ক্রম: শনি, রবি, সোম … শুক্র
 const weekOrder = [6, 7, 1, 2, 3, 4, 5];
 
-/// মার্কেটগুলো বার অনুযায়ী সাজানো (শনিবারেরটা আগে … শুক্রবারেরটা শেষে,
+/// রুটগুলো বার অনুযায়ী সাজানো (শনিবারেরটা আগে … শুক্রবারেরটা শেষে,
 /// বার ঠিক করা না থাকলে সবার শেষে; একই বারে নামের ক্রমে)
 List<T> sortMarkets<T extends Map<String, Object?>>(List<T> list) {
   int rank(T m) {
@@ -154,7 +154,7 @@ String? idleWarning(Map<String, Object?> o) {
   return '${bn(n)} দিন ধরে ভিজিট/এন্ট্রি নেই';
 }
 
-/// মার্কেটের ভিজিটের দিন ("1,3,6" ফরম্যাটে সংরক্ষিত)
+/// রুটের ভিজিটের দিন ("1,3,6" ফরম্যাটে সংরক্ষিত)
 bool hasDay(String days, int weekday) => days.split(',').contains('$weekday');
 
 String daysText(String days) {

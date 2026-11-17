@@ -23,7 +23,7 @@ const _numKb = TextInputType.numberWithOptions(decimal: true);
 // সপ্তাহের ক্রম (বাংলাদেশ): শনি থেকে শুক্র
 
 // =====================================================================
-// মার্কেট যোগ / এডিট (নাম + কোন কোন বারে ভিজিট)
+// রুট যোগ / এডিট (নাম + কোন কোন বারে ভিজিট)
 // =====================================================================
 Future<void> showMarketSheet(BuildContext context, {Rec? existing}) =>
     _sheet<void>(context, _MarketForm(existing: existing));
@@ -55,7 +55,7 @@ class _MarketFormState extends State<_MarketForm> {
   Future<void> _save() async {
     final name = _name.text.trim();
     if (name.isEmpty) {
-      setState(() => _err = 'মার্কেটের নাম লিখুন');
+      setState(() => _err = 'রুটের নাম লিখুন');
       return;
     }
     await AppDb.instance
@@ -64,7 +64,7 @@ class _MarketFormState extends State<_MarketForm> {
   }
 
   Future<void> _delete() async {
-    if (!await confirm(context, 'এই মার্কেট মুছে ফেলবেন?', yes: 'মুছুন')) return;
+    if (!await confirm(context, 'এই রুট মুছে ফেলবেন?', yes: 'মুছুন')) return;
     try {
       await AppDb.instance.deleteMarket(widget.existing!['id'] as int);
       if (mounted) Navigator.pop(context);
@@ -79,12 +79,12 @@ class _MarketFormState extends State<_MarketForm> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(widget.existing == null ? 'নতুন মার্কেট' : 'মার্কেট এডিট',
+        Text(widget.existing == null ? 'নতুন রুট' : 'রুট এডিট',
             style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: 'মার্কেটের নাম *')),
+            decoration: const InputDecoration(labelText: 'রুটের নাম *')),
         const SizedBox(height: 14),
         Text('কোন কোন বারে ভিজিট করেন?',
             style: Theme.of(context).textTheme.titleSmall),
@@ -107,7 +107,7 @@ class _MarketFormState extends State<_MarketForm> {
         if (widget.existing != null)
           TextButton(
             onPressed: _delete,
-            child: Text('মার্কেট মুছুন',
+            child: Text('রুট মুছুন',
                 style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
       ],
@@ -116,7 +116,7 @@ class _MarketFormState extends State<_MarketForm> {
 }
 
 // =====================================================================
-// মার্কেট বাছাই (হোম/রুটে কোন মার্কেট দেখাবে)
+// রুট বাছাই (হোম/রুটে কোন রুট দেখাবে)
 // =====================================================================
 Future<void> showMarketPicker(BuildContext context) async {
   final rows = await AppDb.instance.markets();
@@ -136,13 +136,13 @@ Future<void> showMarketPicker(BuildContext context) async {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('মার্কেট বাছুন',
+                child: Text('রুট পছন্দ করুন',
                     style: Theme.of(ctx).textTheme.titleLarge),
               ),
             ),
             Flexible(
               child: rows.isEmpty
-                  ? const EmptyNote('এখনো কোনো মার্কেট নেই')
+                  ? const EmptyNote('এখনো কোনো রুট নেই')
                   : ListView(
                       shrinkWrap: true,
                       children: [
@@ -166,7 +166,7 @@ Future<void> showMarketPicker(BuildContext context) async {
             ),
             ListTile(
               leading: const Icon(Icons.add),
-              title: const Text('নতুন মার্কেট যোগ করুন'),
+              title: const Text('নতুন রুট যোগ করুন'),
               onTap: () {
                 Navigator.pop(ctx);
                 if (context.mounted) showMarketSheet(context);
@@ -199,6 +199,7 @@ class _OutletFormState extends State<_OutletForm> {
   String _s(String k) => (widget.existing?[k] as String?) ?? '';
   late final _name = TextEditingController(text: _s('name'));
   late final _owner = TextEditingController(text: _s('owner'));
+  late final _manager = TextEditingController(text: _s('manager'));
   late final _phone = TextEditingController(text: _s('phone'));
   late final _address = TextEditingController(text: _s('address'));
   late final _note = TextEditingController(text: _s('note'));
@@ -229,7 +230,7 @@ class _OutletFormState extends State<_OutletForm> {
 
   @override
   void dispose() {
-    for (final c in [_name, _owner, _phone, _address, _note, _opening]) {
+    for (final c in [_name, _owner, _manager, _phone, _address, _note, _opening]) {
       c.dispose();
     }
     super.dispose();
@@ -242,7 +243,7 @@ class _OutletFormState extends State<_OutletForm> {
       return;
     }
     if (_market == null) {
-      setState(() => _err = 'মার্কেট বাছুন (না থাকলে "নতুন মার্কেট" চাপুন)');
+      setState(() => _err = 'রুট পছন্দ করুন (না থাকলে "নতুন রুট" চাপুন)');
       return;
     }
     await AppDb.instance.saveOutlet(
@@ -250,6 +251,7 @@ class _OutletFormState extends State<_OutletForm> {
         'market_id': _market,
         'name': name,
         'owner': _owner.text.trim(),
+        'manager': _manager.text.trim(),
         'phone': _phone.text.trim(),
         'address': _address.text.trim(),
         'note': _note.text.trim(),
@@ -281,12 +283,17 @@ class _OutletFormState extends State<_OutletForm> {
             decoration: const InputDecoration(labelText: 'মালিকের নাম')),
         const SizedBox(height: 10),
         TextField(
+            controller: _manager,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(labelText: 'ম্যানেজারের নাম')),
+        const SizedBox(height: 10),
+        TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(labelText: 'ফোন নম্বর')),
         const SizedBox(height: 14),
-        Text('মার্কেট *', style: Theme.of(context).textTheme.titleSmall),
+        Text('রুট সিলেক্ট করুনঃ- *', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
@@ -300,7 +307,7 @@ class _OutletFormState extends State<_OutletForm> {
               ),
             ActionChip(
               avatar: const Icon(Icons.add, size: 18),
-              label: const Text('নতুন মার্কেট'),
+              label: const Text('নতুন রুট'),
               onPressed: () async {
                 await showMarketSheet(context);
                 await _loadMarkets();
@@ -334,7 +341,7 @@ class _OutletFormState extends State<_OutletForm> {
         TextField(
             controller: _address,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'ঠিকানা')),
+            decoration: const InputDecoration(labelText: 'বাজারের নামঃ-')),
         const SizedBox(height: 10),
         TextField(
             controller: _note,
@@ -368,7 +375,7 @@ class _VisitFormState extends State<_VisitForm> {
   final _coll = TextEditingController();
   final _note = TextEditingController();
   final _nextNote = TextEditingController();
-  late String? _reminder = widget.outlet['pay_reminder'] as String?;
+  String? _reminder; // ডিফল্ট: নাই
 
   double get _due => (widget.outlet['due'] as num).toDouble();
   double get _newDue => _due + parseNum(_sale.text) - parseNum(_coll.text);
@@ -465,74 +472,25 @@ class _VisitFormState extends State<_VisitForm> {
 }
 
 // =====================================================================
-// শুধু ভিজিট (বিক্রি/আদায় ছাড়া): নোট + পরের তাগাদা
+// ভিজিট: এক ক্লিকেই সংরক্ষণ (কোনো মেনু নেই)। ভুলে চাপলে "বাতিল" দিয়ে ফেরানো যায়।
+// তাগাদার তারিখ ও বিশেষ নোট যেমন ছিল তেমনই থাকে।
 // =====================================================================
-Future<void> showQuickVisitSheet(BuildContext context, Rec outlet) =>
-    _sheet<void>(context, _QuickVisitForm(outlet: outlet));
-
-class _QuickVisitForm extends StatefulWidget {
-  const _QuickVisitForm({required this.outlet});
-  final Rec outlet;
-
-  @override
-  State<_QuickVisitForm> createState() => _QuickVisitFormState();
-}
-
-class _QuickVisitFormState extends State<_QuickVisitForm> {
-  final _note = TextEditingController();
-  final _nextNote = TextEditingController();
-  late String? _reminder = widget.outlet['pay_reminder'] as String?;
-
-  @override
-  void dispose() {
-    _note.dispose();
-    _nextNote.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    await AppDb.instance.addVisit(
-      outletId: widget.outlet['id'] as int,
-      date: today(),
-      note: _note.text.trim(),
-      payReminder: _reminder,
-      nextNote: _nextNote.text,
-    );
-    if (mounted) Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final due = (widget.outlet['due'] as num).toDouble();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('ভিজিট — ${widget.outlet['name']}',
-            style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 4),
-        Text('বর্তমান বাকি: ${taka(due)}'),
-        const SizedBox(height: 12),
-        TextField(
-            controller: _note,
-            maxLines: 2,
-            decoration: const InputDecoration(
-                labelText: 'নোট (কী কথা হলো?)')),
-        const SizedBox(height: 12),
-        ReminderField(
-          label: 'পরের তাগাদার তারিখ',
-          value: _reminder,
-          onChanged: (v) => setState(() => _reminder = v),
-        ),
-        const SizedBox(height: 12),
-        NextNoteField(
-            existing: widget.outlet['next_note'] as String?,
-            controller: _nextNote),
-        const SizedBox(height: 12),
-        FilledButton(onPressed: _save, child: const Text('ভিজিট সংরক্ষণ')),
-      ],
-    );
-  }
+Future<void> quickVisit(BuildContext context, Rec outlet) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final id = await AppDb.instance.addVisit(
+    outletId: outlet['id'] as int,
+    date: today(),
+    keepFollowUp: true,
+  );
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      content: Text('${outlet['name']} — ভিজিট সংরক্ষণ হয়েছে'),
+      action: SnackBarAction(
+        label: 'বাতিল',
+        onPressed: () => AppDb.instance.deleteRow('visits', id),
+      ),
+    ));
 }
 
 // =====================================================================

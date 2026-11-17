@@ -17,7 +17,7 @@ void main() {
   Reminders.instance.start();
 }
 
-/// পুরো অ্যাপের লেখার মাপ — Hind Siliguri, একটাই স্কেল:
+/// পুরো অ্যাপের লেখার মাপ — Noto Sans Bengali, একটাই স্কেল:
 /// বড় সংখ্যা ৩৬ · শিরোনাম ২২/২০/১৬ · মূল লেখা ১৫/১৪ · ছোট ১২.৫
 /// (বাংলা অক্ষরের জন্য লাইন-হাইট একটু বেশি, যাতে মাত্রা/কার কাটা না পড়ে)
 const _textTheme = TextTheme(
@@ -45,7 +45,7 @@ class SalesmanDairyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'HindSiliguri', // অ্যাপের সাথেই আসে, ইন্টারনেট লাগে না
+        fontFamily: 'NotoSansBengali', // অ্যাপের সাথেই আসে, ইন্টারনেট লাগে না
         colorSchemeSeed: const Color(0xFFD9480F),
         scaffoldBackgroundColor: cream,
         textTheme: _textTheme,

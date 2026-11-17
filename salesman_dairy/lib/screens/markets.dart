@@ -5,17 +5,17 @@ import '../sheets.dart';
 import '../utils.dart';
 import '../widgets.dart';
 
-/// মার্কেটের তালিকা: নাম, কোন কোন বারে ভিজিট, আউটলেট সংখ্যা, মার্কেট বাকি
+/// রুটের তালিকা: নাম, কোন কোন বারে ভিজিট, আউটলেট সংখ্যা, মার্কেট বাকি
 class MarketsScreen extends StatelessWidget {
   const MarketsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('মার্কেট ও ভিজিটের দিন')),
+      appBar: AppBar(title: const Text('রুট ও ভিজিটের দিন')),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
-        label: const Text('নতুন মার্কেট'),
+        label: const Text('নতুন রুট'),
         onPressed: () => showMarketSheet(context),
       ),
       body: DbBuilder<List<Rec>>(
@@ -23,7 +23,7 @@ class MarketsScreen extends StatelessWidget {
         builder: (context, rows) {
           if (rows.isEmpty) {
             return const EmptyNote(
-                'এখনো কোনো মার্কেট নেই।\nমার্কেট যোগ করে কোন কোন বারে যান তা ঠিক করুন,\nতাহলে হোম ও রুটে নিজে থেকেই আজকের মার্কেট আসবে।');
+                'এখনো কোনো রুট নেই।\nরুট যোগ করে কোন কোন বারে যান তা ঠিক করুন,\nতাহলে হোম ও রুটে নিজে থেকেই আজকের রুট আসবে।');
           }
           return ListView.builder(
             padding: const EdgeInsets.only(bottom: 96),

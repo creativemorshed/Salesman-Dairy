@@ -11,12 +11,12 @@ class _RouteData {
   _RouteData(this.market, this.route, this.extras, this.todaySales,
       this.todayColl);
   final Rec? market;
-  final List<Rec> route; // মার্কেটের আউটলেট
-  final List<Rec> extras; // অন্য মার্কেটের যাদের টাকা দেওয়ার তারিখ হয়ে গেছে
+  final List<Rec> route; // রুটের আউটলেট
+  final List<Rec> extras; // অন্য রুটের যাদের টাকা দেওয়ার তারিখ হয়ে গেছে
   final double todaySales, todayColl;
 }
 
-/// আজকের রুট: মার্কেটের সব আউটলেট (বাকি আগে), ভিজিট এন্ট্রি
+/// আজকের রুট: রুটের সব আউটলেট (বাকি আগে), ভিজিট এন্ট্রি
 class RouteScreen extends StatefulWidget {
   const RouteScreen({super.key});
 
@@ -64,7 +64,6 @@ class _RouteScreenState extends State<RouteScreen> {
                     maxWidth: MediaQuery.of(context).size.width * 0.5),
                 child: MarketChip(
                     name: name,
-                    showPrefix: false,
                     onTap: () => showMarketPicker(context)),
               ),
             ),
@@ -88,10 +87,10 @@ class _RouteScreenState extends State<RouteScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const EmptyNote('এখনো কোনো মার্কেট নেই।\nপ্রথমে মার্কেট যোগ করুন।'),
+            const EmptyNote('এখনো কোনো রুট নেই।\nপ্রথমে রুট যোগ করুন।'),
             FilledButton(
                 onPressed: () => showMarketSheet(context),
-                child: const Text('মার্কেট যোগ করুন')),
+                child: const Text('রুট যোগ করুন')),
           ],
         ),
       );
@@ -133,12 +132,12 @@ class _RouteScreenState extends State<RouteScreen> {
           ),
         ),
         if (d.route.isEmpty)
-          const EmptyNote('এই মার্কেটে কোনো আউটলেট নেই।\n"আউটলেট" ট্যাব থেকে যোগ করুন।')
+          const EmptyNote('এই রুটে কোনো আউটলেট নেই।\n"আউটলেট" ট্যাব থেকে যোগ করুন।')
         else if (shown.isEmpty)
           const EmptyNote('এই তালিকায় কিছু নেই'),
         for (final r in shown) _OutletCard(r: r),
         if (d.extras.isNotEmpty) ...[
-          SectionTitle('অন্য মার্কেটে টাকা চাওয়ার কথা', count: d.extras.length),
+          SectionTitle('অন্য রুটে টাকা চাওয়ার কথা', count: d.extras.length),
           for (final r in d.extras) _OutletCard(r: r, showMarket: true),
         ],
       ],
@@ -261,7 +260,7 @@ class _OutletCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               FilledButton.tonal(
-                onPressed: () => showQuickVisitSheet(context, r),
+                onPressed: () => quickVisit(context, r),
                 child: const Text('ভিজিট', softWrap: false),
               ),
             ],

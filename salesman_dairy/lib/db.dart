@@ -28,10 +28,10 @@ class AppDb {
   Future<Database> _open() async {
     return openDatabase(
       await dbPath(),
-      version: 3,
+      version: 4,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, v) async {
-        // মার্কেট: days = ভিজিটের বারগুলো ("1,3,6" = সোম, বুধ, শনি)
+        // রুট: days = ভিজিটের বারগুলো ("1,3,6" = সোম, বুধ, শনি)
         await db.execute('''
 CREATE TABLE markets(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,6 +49,7 @@ CREATE TABLE outlets(
   opening_due REAL NOT NULL DEFAULT 0,
   pay_reminder TEXT,
   next_note TEXT,
+  manager TEXT,
   created_at TEXT NOT NULL
 )''');
         await db.execute('''
@@ -113,6 +114,10 @@ CREATE TABLE targets(
           await db.execute(
               'ALTER TABLE sales ADD COLUMN special_commission REAL NOT NULL DEFAULT 0');
         }
+        // v4: ম্যানেজারের নাম
+        if (oldV < 4) {
+          await db.execute('ALTER TABLE outlets ADD COLUMN manager TEXT');
+        }
       },
     );
   }
@@ -145,19 +150,19 @@ m.*,
 (SELECT COUNT(*) FROM outlets o WHERE o.market_id=m.id) AS outlet_count,
 $_marketDue AS due''';
 
-  // ---------------- মার্কেট ----------------
+  // ---------------- রুট ----------------
   /// সবসময় বার অনুযায়ী সাজানো: শনিবার, রবিবার, সোমবার … শুক্রবার
   Future<List<Rec>> markets() async => sortMarkets(await (await _d)
       .rawQuery('SELECT $_marketCols FROM markets m'));
 
-  /// নির্দিষ্ট বারে (১=সোম…৭=রবি) যেসব মার্কেটে যাওয়ার কথা
+  /// নির্দিষ্ট বারে (১=সোম…৭=রবি) যেসব রুটে যাওয়ার কথা
   Future<List<Rec>> marketsOnDay(int weekday) async => sortMarkets(
       await (await _d).rawQuery(
         "SELECT $_marketCols FROM markets m WHERE (',' || m.days || ',') LIKE ?",
         ['%,$weekday,%'],
       ));
 
-  /// হোম/রুটে দেখানোর মার্কেট: বাছাই করা → আজকের নির্ধারিত → প্রথমটা
+  /// হোম/রুটে দেখানোর রুট: বাছাই করা → আজকের নির্ধারিত → প্রথমটা
   Future<Rec?> activeMarket(int? selectedId) async {
     final all = await markets();
     if (all.isEmpty) return null;
@@ -185,14 +190,14 @@ $_marketDue AS due''';
     _bump();
   }
 
-  /// মার্কেটে আউটলেট থাকলে মোছা যাবে না
+  /// রুটে আউটলেট থাকলে মোছা যাবে না
   Future<void> deleteMarket(int id) async {
     final d = await _d;
     final n = Sqflite.firstIntValue(await d.rawQuery(
             'SELECT COUNT(*) FROM outlets WHERE market_id=?', [id])) ??
         0;
     if (n > 0) {
-      throw StateError('এই মার্কেটে $nটি আউটলেট আছে। আগে সেগুলো সরান বা মুছুন।');
+      throw StateError('এই রুটে $nটি আউটলেট আছে। আগে সেগুলো সরান বা মুছুন।');
     }
     await d.delete('markets', where: 'id=?', whereArgs: [id]);
     _bump();
@@ -219,7 +224,7 @@ $_marketDue AS due''';
     );
   }
 
-  /// মার্কেটের রুট: ভিজিট বাকিরা আগে; প্রত্যেক দলে বেশি বাকি আগে, বাকি ০ হলে সবার নিচে
+  /// রুটের রুট: ভিজিট বাকিরা আগে; প্রত্যেক দলে বেশি বাকি আগে, বাকি ০ হলে সবার নিচে
   Future<List<Rec>> route(int marketId) async => (await _d).rawQuery(
         'SELECT $_outletCols $_outletFrom WHERE o.market_id=? '
         'ORDER BY visited_today, (due <= 0), due DESC, '
@@ -308,7 +313,7 @@ $_marketDue AS due''';
       whereArgs: [outletId],
       orderBy: 'date DESC, id DESC');
 
-  /// মাসের সব এন্ট্রি (আউটলেট ও মার্কেটের নামসহ)
+  /// মাসের সব এন্ট্রি (আউটলেট ও রুটের নামসহ)
   Future<List<Rec>> entriesBetween(String table, String from, String to) async {
     _checkEntryTable(table);
     return (await _d).rawQuery(
@@ -320,7 +325,9 @@ $_marketDue AS due''';
   }
 
   /// ভিজিট এন্ট্রি: ভিজিট + বিক্রি + আদায় একসাথে সংরক্ষণ
-  Future<void> addVisit({
+  /// ভিজিট (ও থাকলে বিক্রি/আদায়) সংরক্ষণ; ভিজিটের id ফেরত দেয়।
+  /// keepFollowUp = true হলে তাগাদার তারিখ ও বিশেষ নোট যেমন আছে তেমনই থাকে।
+  Future<int> addVisit({
     required int outletId,
     required String date,
     double sale = 0,
@@ -330,10 +337,12 @@ $_marketDue AS due''';
     String note = '',
     String? payReminder,
     String? nextNote,
+    bool keepFollowUp = false,
   }) async {
     final d = await _d;
+    late int visitId;
     await d.transaction((t) async {
-      await t.insert(
+      visitId = await t.insert(
           'visits', {'outlet_id': outletId, 'date': date, 'note': note});
       if (sale > 0) {
         await t.insert('sales', {
@@ -354,12 +363,15 @@ $_marketDue AS due''';
         });
       }
       // ভিজিট হয়ে গেলে আগের বিশেষ নোট শেষ; নতুন নোট (থাকলে) পরের ভিজিটের জন্য
-      final nn = (nextNote ?? '').trim();
-      await t.update(
-          'outlets', {'pay_reminder': payReminder, 'next_note': nn.isEmpty ? null : nn},
-          where: 'id=?', whereArgs: [outletId]);
+      if (!keepFollowUp) {
+        final nn = (nextNote ?? '').trim();
+        await t.update('outlets',
+            {'pay_reminder': payReminder, 'next_note': nn.isEmpty ? null : nn},
+            where: 'id=?', whereArgs: [outletId]);
+      }
     });
     _bump();
+    return visitId;
   }
 
   /// শুধু বিক্রি বা শুধু আদায় যোগ করা
@@ -460,7 +472,7 @@ $_marketDue AS due''';
           [from, to])) ??
       0;
 
-  /// মার্কেট ভিত্তিক: মাসের বিক্রি, আদায় ও এখনকার মোট বাকি
+  /// রুট ভিত্তিক: মাসের বিক্রি, আদায় ও এখনকার মোট বাকি
   Future<List<Rec>> marketStats(String from, String to) async =>
       sortMarkets(await (await _d).rawQuery(
         '''
@@ -534,7 +546,7 @@ FROM markets m''',
       'outlets.csv': await table(
         'SELECT $_outletCols $_outletFrom ORDER BY m.name, o.name',
         [today()],
-        ['মার্কেট', 'আউটলেট', 'মালিক', 'ফোন', 'ঠিকানা', 'গ্রেড', 'বাকি'],
+        ['রুট', 'আউটলেট', 'মালিক', 'ম্যানেজার', 'ফোন', 'বাজার', 'গ্রেড', 'বাকি'],
         ['market_name', 'name', 'owner', 'phone', 'address', 'grade', 'due'],
       ),
       'sales.csv': await table(
@@ -543,7 +555,7 @@ FROM markets m''',
         'FROM sales s JOIN outlets o ON o.id=s.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY s.date',
         [],
-        ['তারিখ', 'মার্কেট', 'আউটলেট', 'বিক্রি', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'],
+        ['তারিখ', 'রুট', 'আউটলেট', 'বিক্রি', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'],
         ['date', 'market', 'outlet', 'amount', 'commission', 'special_commission', 'note'],
       ),
       'collections.csv': await table(
@@ -551,7 +563,7 @@ FROM markets m''',
         'FROM collections c JOIN outlets o ON o.id=c.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY c.date',
         [],
-        ['তারিখ', 'মার্কেট', 'আউটলেট', 'আদায়', 'নোট'],
+        ['তারিখ', 'রুট', 'আউটলেট', 'আদায়', 'নোট'],
         ['date', 'market', 'outlet', 'amount', 'note'],
       ),
       'expenses.csv': await table(

@@ -22,12 +22,12 @@ class OutletsScreen extends StatefulWidget {
 
 class _OutletsScreenState extends State<OutletsScreen> {
   String _q = '';
-  int? _marketId; // null = সব মার্কেট
+  int? _marketId; // null = সব রুট
 
   Future<_OutletsData> _load() async {
     final db = AppDb.instance;
     final markets = await db.markets();
-    // মোছা মার্কেটের ফিল্টার আটকে থাকলে সরিয়ে দাও
+    // মোছা রুটের ফিল্টার আটকে থাকলে সরিয়ে দাও
     if (_marketId != null && !markets.any((m) => m['id'] == _marketId)) {
       _marketId = null;
     }
@@ -42,7 +42,7 @@ class _OutletsScreenState extends State<OutletsScreen> {
         title: const Text('আউটলেট'),
         actions: [
           IconButton(
-            tooltip: 'মার্কেট',
+            tooltip: 'রুট',
             icon: const Icon(Icons.store_mall_directory_outlined),
             onPressed: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const MarketsScreen())),
@@ -115,7 +115,7 @@ class _OutletsScreenState extends State<OutletsScreen> {
               Expanded(
                 child: d.rows.isEmpty
                     ? EmptyNote(d.markets.isEmpty
-                        ? 'আগে মার্কেট যোগ করুন (উপরের ডানের আইকন),\nতারপর আউটলেট যোগ করুন।'
+                        ? 'আগে রুট যোগ করুন (উপরের ডানের আইকন),\nতারপর আউটলেট যোগ করুন।'
                         : (_q.isEmpty
                             ? 'এখনো কোনো আউটলেট নেই।\nনিচের বাটন চেপে যোগ করুন।'
                             : 'কোনো আউটলেট পাওয়া যায়নি'))
@@ -126,8 +126,9 @@ class _OutletsScreenState extends State<OutletsScreen> {
                           final o = d.rows[i];
                           final due = (o['due'] as num).toDouble();
                           final owner = (o['owner'] as String?) ?? '';
+                          final bazar = ((o['address'] as String?) ?? '').trim();
                           final sub = [
-                            o['market_name'] as String,
+                            if (bazar.isNotEmpty) bazar,
                             if (owner.isNotEmpty) owner,
                           ].join(' · ');
                           return AppCard(

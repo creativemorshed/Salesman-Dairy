@@ -196,8 +196,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _header('রুট ও ছুটি'),
                 ListTile(
                   leading: const Icon(Icons.store_mall_directory_outlined),
-                  title: const Text('মার্কেট ও ভিজিটের দিন'),
-                  subtitle: const Text('কোন বারে কোন মার্কেটে যান'),
+                  title: const Text('রুট ও ভিজিটের দিন'),
+                  subtitle: const Text('কোন বারে কোন রুটে যান'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const MarketsScreen())),
@@ -245,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   secondary: const Icon(Icons.notifications_active_outlined),
                   title: const Text('প্রতিদিনের রিমাইন্ডার'),
                   subtitle: const Text(
-                      'আজ কোন মার্কেটে যেতে হবে ও কার কাছে টাকা চাইতে হবে'),
+                      'আজ কোন রুটে যেতে হবে ও কার কাছে টাকা চাইতে হবে'),
                   value: _notif,
                   onChanged: _toggleNotif,
                 ),
