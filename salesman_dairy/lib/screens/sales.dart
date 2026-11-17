@@ -109,6 +109,8 @@ class _EntryList extends StatelessWidget {
         ));
       }
       final note = (r['note'] as String?) ?? '';
+      final comm = (r['commission'] as num?)?.toDouble() ?? 0;
+      final spec = (r['special_commission'] as num?)?.toDouble() ?? 0;
       items.add(AppCard(
         margin: const EdgeInsets.fromLTRB(16, 3, 16, 3),
         padding: const EdgeInsets.fromLTRB(14, 6, 4, 6),
@@ -123,6 +125,14 @@ class _EntryList extends StatelessWidget {
                     [r['market_name'] as String, if (note.isNotEmpty) note]
                         .join(' · '),
                     style: tt.bodySmall),
+                if (!isColl && (comm > 0 || spec > 0))
+                  Text(
+                      [
+                        if (comm > 0) 'কমিশন ${taka(comm)}',
+                        if (spec > 0) 'স্পেশাল ${taka(spec)}',
+                      ].join(' · '),
+                      style: tt.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary)),
               ],
             ),
           ),
@@ -143,16 +153,35 @@ class _EntryList extends StatelessWidget {
       ));
     }
 
+    final commTotal =
+        rows.fold<double>(0, (s, r) => s + ((r['commission'] as num?)?.toDouble() ?? 0));
+    final specTotal = rows.fold<double>(
+        0, (s, r) => s + ((r['special_commission'] as num?)?.toDouble() ?? 0));
     return Column(
       children: [
         AppCard(
-          child: Row(children: [
-            Icon(isColl ? Icons.payments_outlined : Icons.sell_outlined),
-            const SizedBox(width: 10),
-            Text(isColl ? 'এই মাসের মোট আদায়' : 'এই মাসের মোট বিক্রি'),
-            const Spacer(),
-            Text(taka(total),
-                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+          child: Column(children: [
+            Row(children: [
+              Icon(isColl ? Icons.payments_outlined : Icons.sell_outlined),
+              const SizedBox(width: 10),
+              Text(isColl ? 'এই মাসের মোট আদায়' : 'এই মাসের মোট বিক্রি'),
+              const Spacer(),
+              Text(taka(total),
+                  style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            ]),
+            if (!isColl) ...[
+              const Divider(height: 20),
+              Row(children: [
+                Expanded(
+                  child: Text('কমিশন: ${taka(commTotal)}',
+                      style: tt.titleSmall),
+                ),
+                Expanded(
+                  child: Text('স্পেশাল কমিশন: ${taka(specTotal)}',
+                      textAlign: TextAlign.end, style: tt.titleSmall),
+                ),
+              ]),
+            ],
           ]),
         ),
         Expanded(

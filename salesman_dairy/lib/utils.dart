@@ -132,6 +132,13 @@ String agoText(String? date) {
   return 'শেষ ভিজিট: ${bn(n)} দিন আগে';
 }
 
+/// টার্গেট রেকর্ড থেকে একটাই টার্গেট (বিক্রয় ও আদায় সমান, তাই বিক্রয়েরটাই; না থাকলে আদায়েরটা)
+double targetOf(Map<String, Object?>? t) {
+  if (t == null) return 0;
+  final s = (t['sales'] as num?)?.toDouble() ?? 0;
+  return s > 0 ? s : ((t['collection'] as num?)?.toDouble() ?? 0);
+}
+
 /// শেষ ভিজিট/এন্ট্রির পর কত দিন গেছে (আউটলেট রেকর্ড থেকে); না থাকলে null
 int? idleDays(Map<String, Object?> o) {
   final s = o['last_activity'] as String?;

@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _hasPin = false;
   bool _bio = false;
   int _off = 5; // সাপ্তাহিক ছুটি (১=সোম…৭=রবি, ০=নেই)
+  double _target = 0; // এই মাসের (বা আগের সর্বশেষ) টার্গেট
   int _stale = 7; // কত দিন ভিজিট/এন্ট্রি না থাকলে রিমাইন্ডার (০ = বন্ধ)
   TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
 
@@ -44,11 +45,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final m = int.tryParse(await db.getSetting('notif_minute') ?? '') ?? 0;
     final off = int.tryParse(await db.getSetting('weekly_off') ?? '') ?? 5;
     final stale = int.tryParse(await db.getSetting('stale_days') ?? '') ?? 7;
+    final tgt = targetOf(await db.targetFor(monthKey(DateTime.now())));
     final pin = await AppLock.instance.hasPin();
     final bio = await AppLock.instance.biometricEnabled();
     if (!mounted) return;
     setState(() {
       _stale = stale;
+      _target = tgt;
       _notif = n != '0';
       _time = TimeOfDay(hour: h, minute: m);
       _off = off;
@@ -223,6 +226,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                     ],
                   ),
+                ),
+                _header('টার্গেট'),
+                ListTile(
+                  leading: const Icon(Icons.flag_outlined),
+                  title: const Text('মাসিক টার্গেট'),
+                  subtitle: const Text('বিক্রয় ও আদায়ের টার্গেট সমান ধরা হয়'),
+                  trailing: Text(_target > 0 ? taka(_target) : 'সেট করা নেই',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () async {
+                    await showTargetSheet(context, DateTime.now(),
+                        target: _target);
+                    await _load();
+                  },
                 ),
                 _header('রিমাইন্ডার'),
                 SwitchListTile(

@@ -93,25 +93,37 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
 
-        // ---- মার্কেট বাকি ----
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        // ---- বাকির কার্ড: সর্বমোট বাকি + এই রুটের (নির্বাচিত মার্কেটের) বাকি ----
+        AppCard(
+          margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
           child: Column(
             children: [
-              Text(market != null ? 'মার্কেট বাকির পরিমাণ' : 'মোট বাকির পরিমাণ',
+              Text('সর্বমোট মার্কেট বাকি',
                   style: tt.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(taka(marketDue),
+                child: Text(taka(d.totalDue),
                     style: tt.displayMedium?.copyWith(color: cs.onSurface)),
               ),
-              const SizedBox(height: 4),
-              Text('মোট দোকান - ${bn(total)} টি, বাকি দোকান - ${bn(pending.length)} টি',
-                  style: tt.titleSmall),
               if (market != null) ...[
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                const SizedBox(height: 10),
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                        text: market['name'] as String,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    TextSpan(text: ' মোট বাকি: ${taka(marketDue)}'),
+                  ]),
+                  textAlign: TextAlign.center,
+                  style: tt.bodyLarge,
+                ),
                 const SizedBox(height: 2),
-                Text('সব মার্কেট মিলিয়ে মোট বাকি: ${taka(d.totalDue)}',
+                Text(
+                    'মোট দোকান - ${bn(total)} টি, বাকি দোকান - ${bn(pending.length)} টি',
                     style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
               ],
             ],

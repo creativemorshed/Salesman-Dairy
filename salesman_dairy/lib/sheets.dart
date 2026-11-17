@@ -363,6 +363,8 @@ class _VisitForm extends StatefulWidget {
 
 class _VisitFormState extends State<_VisitForm> {
   final _sale = TextEditingController();
+  final _comm = TextEditingController();
+  final _special = TextEditingController();
   final _coll = TextEditingController();
   final _note = TextEditingController();
   final _nextNote = TextEditingController();
@@ -374,6 +376,8 @@ class _VisitFormState extends State<_VisitForm> {
   @override
   void dispose() {
     _sale.dispose();
+    _comm.dispose();
+    _special.dispose();
     _coll.dispose();
     _note.dispose();
     _nextNote.dispose();
@@ -389,6 +393,8 @@ class _VisitFormState extends State<_VisitForm> {
       outletId: widget.outlet['id'] as int,
       date: today(),
       sale: parseNum(_sale.text),
+      commission: parseNum(_comm.text),
+      specialCommission: parseNum(_special.text),
       collected: parseNum(_coll.text),
       note: _note.text.trim(),
       payReminder: _reminder,
@@ -428,6 +434,8 @@ class _VisitFormState extends State<_VisitForm> {
                     labelText: 'আজকের আদায়', prefixText: '৳ ')),
           ),
         ]),
+        const SizedBox(height: 10),
+        CommissionFields(commission: _comm, special: _special),
         const SizedBox(height: 8),
         Text('ভিজিটের পর বাকি: ${taka(_newDue)}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -544,6 +552,8 @@ class _EntryForm extends StatefulWidget {
 
 class _EntryFormState extends State<_EntryForm> {
   final _amount = TextEditingController();
+  final _comm = TextEditingController();
+  final _special = TextEditingController();
   final _note = TextEditingController();
   String _date = today();
   late String? _reminder = widget.outlet['pay_reminder'] as String?;
@@ -554,6 +564,8 @@ class _EntryFormState extends State<_EntryForm> {
   @override
   void dispose() {
     _amount.dispose();
+    _comm.dispose();
+    _special.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -569,6 +581,8 @@ class _EntryFormState extends State<_EntryForm> {
       outletId: widget.outlet['id'] as int,
       date: _date,
       amount: amount,
+      commission: parseNum(_comm.text),
+      specialCommission: parseNum(_special.text),
       note: _note.text.trim(),
       updateReminder: _isColl,
       payReminder: _reminder,
@@ -596,6 +610,10 @@ class _EntryFormState extends State<_EntryForm> {
             decoration: InputDecoration(
                 labelText: _isColl ? 'কত টাকা পেলেন? *' : 'বিক্রির পরিমাণ *',
                 prefixText: '৳ ')),
+        if (!_isColl) ...[
+          const SizedBox(height: 10),
+          CommissionFields(commission: _comm, special: _special),
+        ],
         const SizedBox(height: 10),
         TextField(
             controller: _note,
@@ -669,35 +687,28 @@ class _ReminderFormState extends State<_ReminderForm> {
 }
 
 // =====================================================================
-// মাসিক টার্গেট (বিক্রি ও আদায়)
+// মাসিক টার্গেট (একটাই: বিক্রয় ও আদায়ের টার্গেট সবসময় সমান)
 // =====================================================================
 Future<void> showTargetSheet(BuildContext context, DateTime month,
-        {double sales = 0, double collection = 0}) =>
-    _sheet<void>(
-        context,
-        _TargetForm(month: month, sales: sales, collection: collection));
+        {double target = 0}) =>
+    _sheet<void>(context, _TargetForm(month: month, target: target));
 
 class _TargetForm extends StatefulWidget {
-  const _TargetForm(
-      {required this.month, required this.sales, required this.collection});
+  const _TargetForm({required this.month, required this.target});
   final DateTime month;
-  final double sales;
-  final double collection;
+  final double target;
 
   @override
   State<_TargetForm> createState() => _TargetFormState();
 }
 
 class _TargetFormState extends State<_TargetForm> {
-  late final _sales = TextEditingController(
-      text: widget.sales > 0 ? numText(widget.sales) : '');
-  late final _coll = TextEditingController(
-      text: widget.collection > 0 ? numText(widget.collection) : '');
+  late final _target = TextEditingController(
+      text: widget.target > 0 ? numText(widget.target) : '');
 
   @override
   void dispose() {
-    _sales.dispose();
-    _coll.dispose();
+    _target.dispose();
     super.dispose();
   }
 
@@ -707,20 +718,16 @@ class _TargetFormState extends State<_TargetForm> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('টার্গেট — ${monthTitle(widget.month)}',
+        Text('মাসিক টার্গেট — ${monthTitle(widget.month)}',
             style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         TextField(
-            controller: _sales,
+            controller: _target,
             keyboardType: _numKb,
+            autofocus: true,
             decoration: const InputDecoration(
-                labelText: 'বিক্রির টার্গেট', prefixText: '৳ ')),
-        const SizedBox(height: 10),
-        TextField(
-            controller: _coll,
-            keyboardType: _numKb,
-            decoration: const InputDecoration(
-                labelText: 'আদায়ের টার্গেট', prefixText: '৳ ')),
+                labelText: 'টার্গেট (বিক্রয় ও আদায় দুটোর জন্য)',
+                prefixText: '৳ ')),
         const Padding(
           padding: EdgeInsets.only(top: 8),
           child: Text(
@@ -730,8 +737,8 @@ class _TargetFormState extends State<_TargetForm> {
         const SizedBox(height: 12),
         FilledButton(
           onPressed: () async {
-            await AppDb.instance.setTarget(monthKey(widget.month),
-                parseNum(_sales.text), parseNum(_coll.text));
+            final v = parseNum(_target.text);
+            await AppDb.instance.setTarget(monthKey(widget.month), v, v);
             if (context.mounted) Navigator.pop(context);
           },
           child: const Text('সংরক্ষণ'),
@@ -959,5 +966,35 @@ class NextNoteField extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+
+/// বিক্রির সাথে কমিশন ও স্পেশাল কমিশনের দুটি আলাদা ঘর (টাকার অংকে)
+class CommissionFields extends StatelessWidget {
+  const CommissionFields(
+      {super.key, required this.commission, required this.special});
+  final TextEditingController commission;
+  final TextEditingController special;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Expanded(
+        child: TextField(
+            controller: commission,
+            keyboardType: _numKb,
+            decoration: const InputDecoration(
+                labelText: 'কমিশন', prefixText: '৳ ')),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: TextField(
+            controller: special,
+            keyboardType: _numKb,
+            decoration: const InputDecoration(
+                labelText: 'স্পেশাল কমিশন', prefixText: '৳ ')),
+      ),
+    ]);
   }
 }

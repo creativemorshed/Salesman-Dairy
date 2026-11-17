@@ -6,23 +6,23 @@ import '../utils.dart';
 import '../widgets.dart';
 import 'expenses.dart';
 import 'outlet_detail.dart';
+import 'settings.dart';
 
 class _Prog {
   _Prog({
     required this.sales,
     required this.collected,
     required this.spent,
-    required this.visits,
-    required this.totalDue,
-    required this.salesTarget,
-    required this.collTarget,
+    required this.commission,
+    required this.special,
+    required this.target,
     required this.daysLeft,
     required this.markets,
     required this.top,
     required this.daily,
   });
-  final double sales, collected, spent, totalDue, salesTarget, collTarget;
-  final int visits, daysLeft;
+  final double sales, collected, spent, commission, special, target;
+  final int daysLeft;
   final List<Rec> markets, top;
   final Map<int, double> daily; // মাসের দিন → বিক্রি
 }
@@ -61,10 +61,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
       sales: await db.sales(from, to),
       collected: await db.collected(from, to),
       spent: await db.spent(from, to),
-      visits: await db.visitCount(from, to),
-      totalDue: await db.totalDue(),
-      salesTarget: (t?['sales'] as num?)?.toDouble() ?? 0,
-      collTarget: (t?['collection'] as num?)?.toDouble() ?? 0,
+      commission: await db.commission(from, to),
+      special: await db.specialCommission(from, to),
+      // বিক্রয় ও আদায়ের টার্গেট সবসময় সমান — একটাই সংখ্যা
+      target: (t?['sales'] as num?)?.toDouble() ?? 0,
       daysLeft: daysLeft,
       markets: await db.marketStats(from, to),
       top: await db.topDue(10),
@@ -87,63 +87,57 @@ class _ProgressScreenState extends State<ProgressScreen> {
             children: [
               MonthBar(month: _m, onChanged: (m) => setState(() => _m = m)),
 
-              // ---- টার্গেট বনাম অর্জন ----
+              // ---- টার্গেট কার্ড (হোমের মতো বড় সংখ্যা + একটা বার) ----
               AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Text('টার্গেট ও অর্জন',
-                          style: tt.bodyMedium
-                              ?.copyWith(color: cs.onSurfaceVariant)),
-                      const Spacer(),
-                      TextButton.icon(
-                        icon: const Icon(Icons.flag_outlined, size: 18),
-                        label: const Text('টার্গেট ঠিক করুন'),
-                        onPressed: () => showTargetSheet(context, _m,
-                            sales: d.salesTarget, collection: d.collTarget),
-                      ),
-                    ]),
-                    const SizedBox(height: 4),
-                    TargetBar(
-                        label: 'বিক্রি',
-                        achieved: d.sales,
-                        target: d.salesTarget,
-                        daysLeft: d.daysLeft),
-                    const SizedBox(height: 14),
-                    TargetBar(
-                        label: 'আদায়',
-                        achieved: d.collected,
-                        target: d.collTarget,
-                        daysLeft: d.daysLeft,
-                        color: const Color(0xFF138A9B)),
-                    const SizedBox(height: 10),
-                    Text('কাজের দিন বাকি: ${bn(d.daysLeft)} দিন',
-                        style: tt.bodySmall),
-                  ],
-                ),
+                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: d.target <= 0
+                    ? Column(children: [
+                        Text('এই মাসের টার্গেট সেট করা নেই',
+                            style: tt.titleMedium),
+                        const SizedBox(height: 4),
+                        Text('টার্গেট সেটিংসে ঠিক করা যায়',
+                            style: tt.bodySmall
+                                ?.copyWith(color: cs.onSurfaceVariant)),
+                        const SizedBox(height: 10),
+                        FilledButton.tonalIcon(
+                          icon: const Icon(Icons.settings_outlined),
+                          label: const Text('সেটিংসে যান'),
+                          onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SettingsScreen())),
+                        ),
+                      ])
+                    : _TargetBlock(d: d),
               ),
 
-              // ---- তিনটি সংখ্যা ----
+              // ---- তিনটি সংখ্যা: কমিশন · স্পেশাল কমিশন · মোট খরচ ----
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(children: [
                   Expanded(
                       child: StatCard(
-                          label: 'ভিজিট',
-                          value: '${bn(d.visits)} টি',
-                          icon: Icons.directions_walk)),
+                          label: 'কমিশন',
+                          value: taka(d.commission),
+                          icon: Icons.percent)),
                   Expanded(
                       child: StatCard(
-                          label: 'মোট বাকি',
-                          value: taka(d.totalDue),
-                          icon: Icons.warning_amber_rounded,
-                          color: cs.error)),
+                          label: 'স্পেশাল কমিশন',
+                          value: taka(d.special),
+                          icon: Icons.stars_outlined)),
                   Expanded(
-                      child: StatCard(
-                          label: 'খরচ',
-                          value: taka(d.spent),
-                          icon: Icons.account_balance_wallet_outlined)),
+                      child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ExpensesScreen())),
+                    child: StatCard(
+                        label: 'মোট খরচ',
+                        value: taka(d.spent),
+                        icon: Icons.account_balance_wallet_outlined),
+                  )),
                 ]),
               ),
 
@@ -296,6 +290,112 @@ class _DailyBars extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+
+/// টার্গেট: বড় সংখ্যা → একটা বারে দুই রঙ (বিক্রয় / আদায়) → বাকি → সময় ও দৈনিক লাগবে
+class _TargetBlock extends StatelessWidget {
+  const _TargetBlock({required this.d});
+  final _Prog d;
+
+  static const salesColor = Color(0xFFD9480F);
+  static const collColor = Color(0xFF138A9B);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final salesLeft = (d.target - d.sales).clamp(0, double.infinity).toDouble();
+    final collLeft =
+        (d.target - d.collected).clamp(0, double.infinity).toDouble();
+
+    String timeLine;
+    if (salesLeft <= 0) {
+      timeLine = 'বিক্রয়ের টার্গেট পূর্ণ! 🎉';
+    } else if (d.daysLeft <= 0) {
+      timeLine = 'মাস শেষ';
+    } else {
+      timeLine =
+          'আরও সময় আছে ${bn(d.daysLeft)} দিন | দৈনিক বিক্রয় লাগবে ${taka((salesLeft / d.daysLeft).ceil())}';
+    }
+
+    Widget left(Color c, String text) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+            const SizedBox(width: 6),
+            Text(text, style: tt.bodyMedium),
+          ],
+        );
+
+    return Column(
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('টার্গেটঃ ${taka(d.target)}',
+              style: tt.headlineSmall
+                  ?.copyWith(fontSize: 28, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 12),
+        _DualBar(
+            sales: d.sales / d.target,
+            collected: d.collected / d.target,
+            salesColor: salesColor,
+            collColor: collColor,
+            track: cs.surfaceContainerHighest),
+        const SizedBox(height: 10),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 16,
+          runSpacing: 4,
+          children: [
+            left(salesColor, 'বিক্রয় এখনও বাকি ${taka(salesLeft)}'),
+            left(collColor, 'নগদ কালেকশন বাকি ${taka(collLeft)}'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(timeLine,
+            textAlign: TextAlign.center,
+            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+/// একটাই গোল বার, ভেতরে দুই লেন: ওপরে বিক্রয় (কমলা), নিচে আদায় (সবুজ-নীল)
+class _DualBar extends StatelessWidget {
+  const _DualBar(
+      {required this.sales,
+      required this.collected,
+      required this.salesColor,
+      required this.collColor,
+      required this.track});
+  final double sales, collected;
+  final Color salesColor, collColor, track;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget lane(double f, Color c) => LayoutBuilder(
+          builder: (context, box) => Stack(children: [
+            Container(height: 10, color: track),
+            Container(
+                height: 10,
+                width: box.maxWidth * f.clamp(0.0, 1.0),
+                color: c),
+          ]),
+        );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Column(children: [
+        lane(sales, salesColor),
+        const SizedBox(height: 2),
+        lane(collected, collColor),
+      ]),
     );
   }
 }

@@ -28,7 +28,7 @@ class AppDb {
   Future<Database> _open() async {
     return openDatabase(
       await dbPath(),
-      version: 2,
+      version: 3,
       onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: (db, v) async {
         // মার্কেট: days = ভিজিটের বারগুলো ("1,3,6" = সোম, বুধ, শনি)
@@ -57,6 +57,8 @@ CREATE TABLE sales(
   outlet_id INTEGER NOT NULL REFERENCES outlets(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
   amount REAL NOT NULL,
+  commission REAL NOT NULL DEFAULT 0,
+  special_commission REAL NOT NULL DEFAULT 0,
   note TEXT
 )''');
         await db.execute('''
@@ -103,6 +105,13 @@ CREATE TABLE targets(
         // v2: পরের ভিজিটের বিশেষ নোট
         if (oldV < 2) {
           await db.execute('ALTER TABLE outlets ADD COLUMN next_note TEXT');
+        }
+        // v3: প্রতিটি বিক্রির কমিশন ও স্পেশাল কমিশন
+        if (oldV < 3) {
+          await db.execute(
+              'ALTER TABLE sales ADD COLUMN commission REAL NOT NULL DEFAULT 0');
+          await db.execute(
+              'ALTER TABLE sales ADD COLUMN special_commission REAL NOT NULL DEFAULT 0');
         }
       },
     );
@@ -315,6 +324,8 @@ $_marketDue AS due''';
     required int outletId,
     required String date,
     double sale = 0,
+    double commission = 0,
+    double specialCommission = 0,
     double collected = 0,
     String note = '',
     String? payReminder,
@@ -325,8 +336,14 @@ $_marketDue AS due''';
       await t.insert(
           'visits', {'outlet_id': outletId, 'date': date, 'note': note});
       if (sale > 0) {
-        await t.insert('sales',
-            {'outlet_id': outletId, 'date': date, 'amount': sale, 'note': note});
+        await t.insert('sales', {
+          'outlet_id': outletId,
+          'date': date,
+          'amount': sale,
+          'commission': commission,
+          'special_commission': specialCommission,
+          'note': note
+        });
       }
       if (collected > 0) {
         await t.insert('collections', {
@@ -351,6 +368,8 @@ $_marketDue AS due''';
     required int outletId,
     required String date,
     required double amount,
+    double commission = 0,
+    double specialCommission = 0,
     String note = '',
     bool updateReminder = false,
     String? payReminder,
@@ -362,6 +381,8 @@ $_marketDue AS due''';
         'outlet_id': outletId,
         'date': date,
         'amount': amount,
+        if (table == 'sales') 'commission': commission,
+        if (table == 'sales') 'special_commission': specialCommission,
         'note': note,
       });
       if (updateReminder) {
@@ -411,6 +432,15 @@ $_marketDue AS due''';
   /// from (অন্তর্ভুক্ত) থেকে to (বাদ) পর্যন্ত
   Future<double> sales(String from, String to) => _sum(
       'SELECT SUM(amount) FROM sales WHERE date>=? AND date<?', [from, to]);
+
+  /// মাসের মোট কমিশন
+  Future<double> commission(String from, String to) => _sum(
+      'SELECT SUM(commission) FROM sales WHERE date>=? AND date<?', [from, to]);
+
+  /// মাসের মোট স্পেশাল কমিশন
+  Future<double> specialCommission(String from, String to) => _sum(
+      'SELECT SUM(special_commission) FROM sales WHERE date>=? AND date<?',
+      [from, to]);
 
   Future<double> collected(String from, String to) => _sum(
       'SELECT SUM(amount) FROM collections WHERE date>=? AND date<?',
@@ -508,12 +538,13 @@ FROM markets m''',
         ['market_name', 'name', 'owner', 'phone', 'address', 'grade', 'due'],
       ),
       'sales.csv': await table(
-        'SELECT s.date, m.name AS market, o.name AS outlet, s.amount, s.note '
+        'SELECT s.date, m.name AS market, o.name AS outlet, s.amount, '
+        's.commission, s.special_commission, s.note '
         'FROM sales s JOIN outlets o ON o.id=s.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY s.date',
         [],
-        ['তারিখ', 'মার্কেট', 'আউটলেট', 'বিক্রি', 'নোট'],
-        ['date', 'market', 'outlet', 'amount', 'note'],
+        ['তারিখ', 'মার্কেট', 'আউটলেট', 'বিক্রি', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'],
+        ['date', 'market', 'outlet', 'amount', 'commission', 'special_commission', 'note'],
       ),
       'collections.csv': await table(
         'SELECT c.date, m.name AS market, o.name AS outlet, c.amount, c.note '
