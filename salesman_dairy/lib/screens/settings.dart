@@ -231,7 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.flag_outlined),
                   title: const Text('মাসিক টার্গেট'),
-                  subtitle: const Text('বিক্রয় ও আদায়ের টার্গেট সমান ধরা হয়'),
+                  subtitle: const Text('বিক্রয় ও কালেকশনের টার্গেট সমান ধরা হয়'),
                   trailing: Text(_target > 0 ? taka(_target) : 'সেট করা নেই',
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   onTap: () async {

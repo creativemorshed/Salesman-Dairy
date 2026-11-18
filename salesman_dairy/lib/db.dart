@@ -107,7 +107,7 @@ CREATE TABLE targets(
         if (oldV < 2) {
           await db.execute('ALTER TABLE outlets ADD COLUMN next_note TEXT');
         }
-        // v3: প্রতিটি বিক্রির কমিশন ও স্পেশাল কমিশন
+        // v3: প্রতিটি বিক্রয়ের কমিশন ও স্পেশাল কমিশন
         if (oldV < 3) {
           await db.execute(
               'ALTER TABLE sales ADD COLUMN commission REAL NOT NULL DEFAULT 0');
@@ -122,7 +122,7 @@ CREATE TABLE targets(
     );
   }
 
-  // বাকি = আগের বাকি + মোট বিক্রি − মোট আদায়
+  // বাকি = আগের বাকি + মোট বিক্রয় − মোট কালেকশন
   // প্রথম `?` = আজকের তারিখ (visited_today এর জন্য)
   static const _outletCols = '''
 o.*, m.name AS market_name,
@@ -271,7 +271,7 @@ $_marketDue AS due''';
         [today(), date],
       );
 
-  /// N দিন বা তার বেশি কোনো ভিজিট/বিক্রি/আদায় নেই এমন আউটলেট (সবচেয়ে পুরনো আগে)
+  /// N দিন বা তার বেশি কোনো ভিজিট/বিক্রয়/কালেকশন নেই এমন আউটলেট (সবচেয়ে পুরনো আগে)
   Future<List<Rec>> staleOutlets(int days, {String? asOf}) async =>
       (await _d).rawQuery(
         'SELECT * FROM (SELECT $_outletCols $_outletFrom) '
@@ -293,7 +293,7 @@ $_marketDue AS due''';
         [today(), limit],
       );
 
-  // ---------------- বিক্রি / আদায় / ভিজিট ----------------
+  // ---------------- বিক্রয় / কালেকশন / ভিজিট ----------------
   static const _entryTables = {'sales', 'collections'};
 
   void _checkEntryTable(String t) {
@@ -324,8 +324,8 @@ $_marketDue AS due''';
     );
   }
 
-  /// ভিজিট এন্ট্রি: ভিজিট + বিক্রি + আদায় একসাথে সংরক্ষণ
-  /// ভিজিট (ও থাকলে বিক্রি/আদায়) সংরক্ষণ; ভিজিটের id ফেরত দেয়।
+  /// ভিজিট এন্ট্রি: ভিজিট + বিক্রয় + কালেকশন একসাথে সংরক্ষণ
+  /// ভিজিট (ও থাকলে বিক্রয়/কালেকশন) সংরক্ষণ; ভিজিটের id ফেরত দেয়।
   /// keepFollowUp = true হলে তাগাদার তারিখ ও বিশেষ নোট যেমন আছে তেমনই থাকে।
   Future<int> addVisit({
     required int outletId,
@@ -374,7 +374,7 @@ $_marketDue AS due''';
     return visitId;
   }
 
-  /// শুধু বিক্রি বা শুধু আদায় যোগ করা
+  /// শুধু বিক্রয় বা শুধু কালেকশন যোগ করা
   Future<void> addEntry({
     required String table,
     required int outletId,
@@ -472,7 +472,7 @@ $_marketDue AS due''';
           [from, to])) ??
       0;
 
-  /// রুট ভিত্তিক: মাসের বিক্রি, আদায় ও এখনকার মোট বাকি
+  /// রুট ভিত্তিক: মাসের বিক্রয়, কালেকশন ও এখনকার মোট বাকি
   Future<List<Rec>> marketStats(String from, String to) async =>
       sortMarkets(await (await _d).rawQuery(
         '''
@@ -555,7 +555,7 @@ FROM markets m''',
         'FROM sales s JOIN outlets o ON o.id=s.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY s.date',
         [],
-        ['তারিখ', 'রুট', 'আউটলেট', 'বিক্রি', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'],
+        ['তারিখ', 'রুট', 'আউটলেট', 'বিক্রয়', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'],
         ['date', 'market', 'outlet', 'amount', 'commission', 'special_commission', 'note'],
       ),
       'collections.csv': await table(
@@ -563,7 +563,7 @@ FROM markets m''',
         'FROM collections c JOIN outlets o ON o.id=c.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY c.date',
         [],
-        ['তারিখ', 'রুট', 'আউটলেট', 'আদায়', 'নোট'],
+        ['তারিখ', 'রুট', 'আউটলেট', 'কালেকশন', 'নোট'],
         ['date', 'market', 'outlet', 'amount', 'note'],
       ),
       'expenses.csv': await table(

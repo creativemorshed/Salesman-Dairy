@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 
 import 'db.dart';
 import 'state.dart';
@@ -164,14 +165,16 @@ Future<void> showMarketPicker(BuildContext context) async {
                       ],
                     ),
             ),
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('নতুন রুট যোগ করুন'),
-              onTap: () {
-                Navigator.pop(ctx);
-                if (context.mounted) showMarketSheet(context);
-              },
-            ),
+            // ৬টি রুট হয়ে গেলে এখানে যোগ করার অপশন নেই (সেটিংসে আছে)
+            if (rows.length < routeQuickAddLimit)
+              ListTile(
+                leading: const Icon(Icons.add),
+                title: const Text('নতুন রুট যোগ করুন'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (context.mounted) showMarketSheet(context);
+                },
+              ),
           ],
         ),
       ),
@@ -226,6 +229,24 @@ class _OutletFormState extends State<_OutletForm> {
       _markets = m;
       if (_market == null && m.length == 1) _market = m.first['id'] as int;
     });
+  }
+
+  /// ফোনের কন্টাক্ট লিস্ট থেকে একটা নম্বর বেছে ঘরে বসায়
+  Future<void> _pickContact() async {
+    try {
+      final c = await FlutterNativeContactPicker().selectContact();
+      final raw = (c?.phoneNumbers != null && c!.phoneNumbers!.isNotEmpty)
+          ? c.phoneNumbers!.first
+          : null;
+      if (raw == null) return;
+      var n = raw.replaceAll(RegExp(r'[\s\-()]'), '');
+      // +8801XXXXXXXXX / 8801XXXXXXXXX → 01XXXXXXXXX
+      if (n.startsWith('+880')) n = '0${n.substring(4)}';
+      if (n.startsWith('880') && n.length == 13) n = '0${n.substring(3)}';
+      if (mounted) setState(() => _phone.text = n);
+    } catch (_) {
+      if (mounted) snack(context, 'কন্টাক্ট খোলা যায়নি। নম্বরটা হাতে লিখুন।');
+    }
   }
 
   @override
@@ -291,7 +312,14 @@ class _OutletFormState extends State<_OutletForm> {
             controller: _phone,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'ফোন নম্বর')),
+            decoration: InputDecoration(
+              labelText: 'ফোন নম্বর',
+              suffixIcon: IconButton(
+                tooltip: 'মোবাইলের কন্টাক্ট থেকে নিন',
+                icon: const Icon(Icons.contacts_outlined),
+                onPressed: _pickContact,
+              ),
+            )),
         const SizedBox(height: 14),
         Text('রুট সিলেক্ট করুনঃ- *', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 6),
@@ -305,14 +333,15 @@ class _OutletFormState extends State<_OutletForm> {
                 selected: _market == m['id'],
                 onSelected: (_) => setState(() => _market = m['id'] as int),
               ),
-            ActionChip(
-              avatar: const Icon(Icons.add, size: 18),
-              label: const Text('নতুন রুট'),
-              onPressed: () async {
-                await showMarketSheet(context);
-                await _loadMarkets();
-              },
-            ),
+            if (_markets.length < routeQuickAddLimit)
+              ActionChip(
+                avatar: const Icon(Icons.add, size: 18),
+                label: const Text('নতুন রুট'),
+                onPressed: () async {
+                  await showMarketSheet(context);
+                  await _loadMarkets();
+                },
+              ),
           ],
         ),
         const SizedBox(height: 14),
@@ -355,7 +384,7 @@ class _OutletFormState extends State<_OutletForm> {
 }
 
 // =====================================================================
-// ভিজিট এন্ট্রি: বিক্রি + আদায় + নোট + পরের তাগাদা (একসাথে)
+// ভিজিট এন্ট্রি: বিক্রয় + কালেকশন + নোট + পরের তাগাদা (একসাথে)
 // =====================================================================
 Future<void> showVisitSheet(BuildContext context, Rec outlet) =>
     _sheet<void>(context, _VisitForm(outlet: outlet));
@@ -393,7 +422,7 @@ class _VisitFormState extends State<_VisitForm> {
 
   Future<void> _save() async {
     if (parseNum(_sale.text) <= 0 && parseNum(_coll.text) <= 0) {
-      snack(context, 'বিক্রি বা আদায় লিখুন। কিছু না থাকলে "ভিজিট" বাটন চাপুন।');
+      snack(context, 'বিক্রয় বা কালেকশন লিখুন। কিছু না থাকলে "ভিজিট" বাটন চাপুন।');
       return;
     }
     await AppDb.instance.addVisit(
@@ -429,7 +458,7 @@ class _VisitFormState extends State<_VisitForm> {
                 keyboardType: _numKb,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
-                    labelText: 'আজকের বিক্রি', prefixText: '৳ ')),
+                    labelText: 'আজকের বিক্রয়', prefixText: '৳ ')),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -438,7 +467,7 @@ class _VisitFormState extends State<_VisitForm> {
                 keyboardType: _numKb,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
-                    labelText: 'আজকের আদায়', prefixText: '৳ ')),
+                    labelText: 'আজকের কালেকশন', prefixText: '৳ ')),
           ),
         ]),
         const SizedBox(height: 10),
@@ -494,7 +523,7 @@ Future<void> quickVisit(BuildContext context, Rec outlet) async {
 }
 
 // =====================================================================
-// শুধু বিক্রি বা শুধু আদায় এন্ট্রি (table: 'sales' | 'collections')
+// শুধু বিক্রয় বা শুধু কালেকশন এন্ট্রি (table: 'sales' | 'collections')
 // =====================================================================
 Future<void> showEntrySheet(BuildContext context, Rec outlet, String table) =>
     _sheet<void>(context, _EntryForm(outlet: outlet, table: table));
@@ -556,7 +585,7 @@ class _EntryFormState extends State<_EntryForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-            '${_isColl ? 'আদায়' : 'বিক্রি'} — ${widget.outlet['name']}',
+            '${_isColl ? 'কালেকশন' : 'বিক্রয়'} — ${widget.outlet['name']}',
             style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 4),
         Text('বর্তমান বাকি: ${taka(due)}'),
@@ -566,7 +595,7 @@ class _EntryFormState extends State<_EntryForm> {
             keyboardType: _numKb,
             autofocus: true,
             decoration: InputDecoration(
-                labelText: _isColl ? 'কত টাকা পেলেন? *' : 'বিক্রির পরিমাণ *',
+                labelText: _isColl ? 'কত টাকা পেলেন? *' : 'বিক্রয়ের পরিমাণ *',
                 prefixText: '৳ ')),
         if (!_isColl) ...[
           const SizedBox(height: 10),
@@ -645,7 +674,7 @@ class _ReminderFormState extends State<_ReminderForm> {
 }
 
 // =====================================================================
-// মাসিক টার্গেট (একটাই: বিক্রয় ও আদায়ের টার্গেট সবসময় সমান)
+// মাসিক টার্গেট (একটাই: বিক্রয় ও কালেকশনের টার্গেট সবসময় সমান)
 // =====================================================================
 Future<void> showTargetSheet(BuildContext context, DateTime month,
         {double target = 0}) =>
@@ -684,7 +713,7 @@ class _TargetFormState extends State<_TargetForm> {
             keyboardType: _numKb,
             autofocus: true,
             decoration: const InputDecoration(
-                labelText: 'টার্গেট (বিক্রয় ও আদায় দুটোর জন্য)',
+                labelText: 'টার্গেট (বিক্রয় ও কালেকশন দুটোর জন্য)',
                 prefixText: '৳ ')),
         const Padding(
           padding: EdgeInsets.only(top: 8),
@@ -798,7 +827,7 @@ class _ExpenseFormState extends State<_ExpenseForm> {
 }
 
 // =====================================================================
-// আউটলেট বাছাই (বিক্রি/আদায় এন্ট্রির জন্য)
+// আউটলেট বাছাই (বিক্রয়/কালেকশন এন্ট্রির জন্য)
 // =====================================================================
 Future<Rec?> pickOutlet(BuildContext context) {
   return showModalBottomSheet<Rec>(
@@ -928,7 +957,7 @@ class NextNoteField extends StatelessWidget {
 }
 
 
-/// বিক্রির সাথে কমিশন ও স্পেশাল কমিশনের দুটি আলাদা ঘর (টাকার অংকে)
+/// বিক্রয়ের সাথে কমিশন ও স্পেশাল কমিশনের দুটি আলাদা ঘর (টাকার অংকে)
 class CommissionFields extends StatelessWidget {
   const CommissionFields(
       {super.key, required this.commission, required this.special});

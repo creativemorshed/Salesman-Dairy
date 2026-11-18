@@ -24,11 +24,11 @@ class _Prog {
   final double sales, collected, spent, commission, special, target;
   final int daysLeft;
   final List<Rec> markets, top;
-  final Map<int, double> daily; // মাসের দিন → বিক্রি
-  final Map<int, double> dailyColl; // মাসের দিন → আদায়
+  final Map<int, double> daily; // মাসের দিন → বিক্রয়
+  final Map<int, double> dailyColl; // মাসের দিন → কালেকশন
 }
 
-/// এক নজরে: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রি, রুট অনুযায়ী হিসাব, বেশি বাকি
+/// এক নজরে: টার্গেট বনাম অর্জন, দিনভিত্তিক বিক্রয়, রুট অনুযায়ী হিসাব, বেশি বাকি
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
@@ -71,7 +71,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       spent: await db.spent(from, to),
       commission: await db.commission(from, to),
       special: await db.specialCommission(from, to),
-      // বিক্রয় ও আদায়ের টার্গেট সবসময় সমান — একটাই সংখ্যা
+      // বিক্রয় ও কালেকশনের টার্গেট সবসময় সমান — একটাই সংখ্যা
       target: (t?['sales'] as num?)?.toDouble() ?? 0,
       daysLeft: daysLeft,
       markets: await db.marketStats(from, to),
@@ -182,7 +182,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       ]),
                       const SizedBox(height: 4),
                       Text(
-                          'বিক্রি ${taka(m['sales'] as num)} · আদায় ${taka(m['collected'] as num)}',
+                          'বিক্রয় ${taka(m['sales'] as num)} · কালেকশন ${taka(m['collected'] as num)}',
                           style: tt.bodySmall),
                     ],
                   ),
@@ -404,7 +404,7 @@ class _DailyPairsState extends State<_DailyPairs> {
       );
 }
 
-/// টার্গেট: বড় সংখ্যা → একটা বারে দুই রঙ (বিক্রয় / আদায়) → বাকি → সময় ও দৈনিক লাগবে
+/// টার্গেট: বড় সংখ্যা → একটা বারে দুই রঙ (বিক্রয় / কালেকশন) → বাকি → সময় ও দৈনিক লাগবে
 class _TargetBlock extends StatelessWidget {
   const _TargetBlock({required this.d});
   final _Prog d;

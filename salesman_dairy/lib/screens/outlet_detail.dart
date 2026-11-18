@@ -85,7 +85,7 @@ class _View extends StatelessWidget {
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
                 final ok = await confirm(context,
-                    'এই আউটলেট এবং এর সব বিক্রি, আদায় ও ভিজিটের তথ্য মুছে যাবে। নিশ্চিত?',
+                    'এই আউটলেট এবং এর সব বিক্রয়, কালেকশন ও ভিজিটের তথ্য মুছে যাবে। নিশ্চিত?',
                     yes: 'মুছুন');
                 if (!ok) return;
                 await AppDb.instance.deleteOutlet(id);
@@ -175,8 +175,8 @@ class _View extends StatelessWidget {
                   const Divider(height: 22),
                   Row(children: [
                     _num(context, 'আগের বাকি', taka(opening)),
-                    _num(context, 'মোট বিক্রি', taka(_sum(d.sales))),
-                    _num(context, 'মোট আদায়', taka(_sum(d.collections))),
+                    _num(context, 'মোট বিক্রয়', taka(_sum(d.sales))),
+                    _num(context, 'মোট কালেকশন', taka(_sum(d.collections))),
                     _num(context, 'বর্তমান বাকি', taka(due),
                         color: due > 0 ? cs.error : Colors.green),
                   ]),
@@ -200,8 +200,8 @@ class _View extends StatelessWidget {
               ),
             ),
             const TabBar(tabs: [
-              Tab(text: 'বিক্রি'),
-              Tab(text: 'আদায়'),
+              Tab(text: 'বিক্রয়'),
+              Tab(text: 'কালেকশন'),
               Tab(text: 'ভিজিট'),
             ]),
             Expanded(
@@ -247,7 +247,7 @@ class _EntriesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rows.isEmpty) {
-      return EmptyNote(table == 'sales' ? 'কোনো বিক্রি নেই' : 'কোনো আদায় নেই');
+      return EmptyNote(table == 'sales' ? 'কোনো বিক্রয় নেই' : 'কোনো কালেকশন নেই');
     }
     final isColl = table == 'collections';
     return ListView.builder(

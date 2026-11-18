@@ -108,8 +108,8 @@ class _RouteScreenState extends State<RouteScreen> {
           child: Row(
             children: [
               _mini(context, 'ভিজিট', '${bn(done.length)}/${bn(d.route.length)}'),
-              _mini(context, 'আজকের বিক্রি', taka(d.todaySales)),
-              _mini(context, 'আজকের আদায়', taka(d.todayColl)),
+              _mini(context, 'আজকের বিক্রয়', taka(d.todaySales)),
+              _mini(context, 'আজকের কালেকশন', taka(d.todayColl)),
             ],
           ),
         ),

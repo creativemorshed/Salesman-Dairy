@@ -7,7 +7,7 @@ import 'progress.dart';
 import 'route_screen.dart';
 import 'sales.dart';
 
-/// নিচের ৫টি ট্যাব: হোম · আজকের রুট · আউটলেট · বিক্রি · এক নজরে
+/// নিচের ৫টি ট্যাব: হোম · রুট · আউটলেট · বিক্রয় · এক নজরে
 class Home extends StatelessWidget {
   const Home({super.key});
 
@@ -36,7 +36,7 @@ class Home extends StatelessWidget {
             NavigationDestination(
                 icon: Icon(Icons.alt_route),
                 selectedIcon: Icon(Icons.route),
-                label: 'আজকের রুট'),
+                label: 'রুট'),
             NavigationDestination(
                 icon: Icon(Icons.storefront_outlined),
                 selectedIcon: Icon(Icons.storefront),
@@ -44,7 +44,7 @@ class Home extends StatelessWidget {
             NavigationDestination(
                 icon: Icon(Icons.sell_outlined),
                 selectedIcon: Icon(Icons.sell),
-                label: 'বিক্রি'),
+                label: 'বিক্রয়'),
             NavigationDestination(
                 icon: Icon(Icons.trending_up),
                 selectedIcon: Icon(Icons.show_chart),

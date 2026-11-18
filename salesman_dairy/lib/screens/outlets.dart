@@ -4,7 +4,6 @@ import '../db.dart';
 import '../sheets.dart';
 import '../utils.dart';
 import '../widgets.dart';
-import 'markets.dart';
 import 'outlet_detail.dart';
 
 class _OutletsData {
@@ -38,17 +37,6 @@ class _OutletsScreenState extends State<OutletsScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('আউটলেট'),
-        actions: [
-          IconButton(
-            tooltip: 'রুট',
-            icon: const Icon(Icons.store_mall_directory_outlined),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const MarketsScreen())),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add_business_outlined),
         label: const Text('নতুন আউটলেট'),
@@ -59,10 +47,12 @@ class _OutletsScreenState extends State<OutletsScreen> {
         builder: (context, d) {
           final total =
               d.rows.fold<double>(0, (s, r) => s + (r['due'] as num).toDouble());
-          return Column(
+          return SafeArea(
+            bottom: false,
+            child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: TextField(
                   onChanged: (v) => setState(() => _q = v),
                   decoration: const InputDecoration(
@@ -115,7 +105,7 @@ class _OutletsScreenState extends State<OutletsScreen> {
               Expanded(
                 child: d.rows.isEmpty
                     ? EmptyNote(d.markets.isEmpty
-                        ? 'আগে রুট যোগ করুন (উপরের ডানের আইকন),\nতারপর আউটলেট যোগ করুন।'
+                        ? 'আগে সেটিংসে গিয়ে রুট যোগ করুন,\nতারপর আউটলেট যোগ করুন।'
                         : (_q.isEmpty
                             ? 'এখনো কোনো আউটলেট নেই।\nনিচের বাটন চেপে যোগ করুন।'
                             : 'কোনো আউটলেট পাওয়া যায়নি'))
@@ -181,7 +171,7 @@ class _OutletsScreenState extends State<OutletsScreen> {
                       ),
               ),
             ],
-          );
+          ));
         },
       ),
     );
