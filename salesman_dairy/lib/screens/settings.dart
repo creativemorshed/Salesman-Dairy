@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../db.dart';
+import '../donation.dart';
 import '../lock.dart';
 import '../notifications.dart';
 import '../sheets.dart';
@@ -194,6 +195,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : ListView(
               children: [
                 _header('রুট ও ছুটি'),
+                ListTile(
+                  leading: const Icon(Icons.favorite_border),
+                  title: const Text('ডোনেশনের নম্বর'),
+                  subtitle: const Text('বিকাশ / নগদ / রকেট — হোমের ডোনেশন কার্ডে দেখাবে'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => showDonationNumbersSheet(context),
+                ),
                 ListTile(
                   leading: const Icon(Icons.store_mall_directory_outlined),
                   title: const Text('রুট ও ভিজিটের দিন'),

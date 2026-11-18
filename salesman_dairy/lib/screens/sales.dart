@@ -241,7 +241,7 @@ class _DayCardState extends State<_DayCard> {
             children: [
               Row(children: [
                 Expanded(
-                  child: Text('${niceDate(widget.date)} · ${weekdayShort[d.weekday]}',
+                  child: Text('${weekdayNames[d.weekday]} : ${bn(d.day)} ${bnMonths[d.month - 1]}',
                       style: tt.titleMedium
                           ?.copyWith(fontWeight: FontWeight.w700)),
                 ),
@@ -304,9 +304,14 @@ class _DayCardState extends State<_DayCard> {
               Text(r['outlet_name'] as String,
                   style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               Text(
-                  [r['market_name'] as String, if (note.isNotEmpty) note]
-                      .join(' · '),
+                  [
+                    ((r['outlet_address'] as String?) ?? '').trim(),
+                    ((r['outlet_owner'] as String?) ?? '').trim(),
+                  ].where((e) => e.isNotEmpty).join(' · '),
                   style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+              if (note.isNotEmpty)
+                Text(note,
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
               if (!_isColl && (comm > 0 || spec > 0))
                 Text(
                     [

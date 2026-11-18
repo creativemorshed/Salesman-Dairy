@@ -162,20 +162,23 @@ $_marketDue AS due''';
         ['%,$weekday,%'],
       ));
 
-  /// হোম/রুটে দেখানোর রুট: বাছাই করা → আজকের নির্ধারিত → প্রথমটা
+  /// আজ যে যে রুটে ভিজিট করা যাবে: আজকের বারে নির্ধারিত রুটগুলো।
+  /// আজ কোনো রুট নির্ধারিত না থাকলে (বা বার ঠিক করা না থাকলে) সবগুলো।
+  Future<List<Rec>> allowedMarketsToday() async {
+    final todays = await marketsOnDay(DateTime.now().weekday);
+    return todays.isNotEmpty ? todays : await markets();
+  }
+
+  /// হোম/রুটে দেখানোর রুট: (আজকের অনুমোদিত রুটের মধ্যে) বাছাই করা → প্রথমটা
   Future<Rec?> activeMarket(int? selectedId) async {
-    final all = await markets();
-    if (all.isEmpty) return null;
+    final allowed = await allowedMarketsToday();
+    if (allowed.isEmpty) return null;
     if (selectedId != null) {
-      for (final m in all) {
+      for (final m in allowed) {
         if (m['id'] == selectedId) return m;
       }
     }
-    final w = DateTime.now().weekday;
-    for (final m in all) {
-      if (hasDay(m['days'] as String, w)) return m;
-    }
-    return all.first;
+    return allowed.first;
   }
 
   Future<void> saveMarket(String name, List<int> days, {int? id}) async {
@@ -317,7 +320,8 @@ $_marketDue AS due''';
   Future<List<Rec>> entriesBetween(String table, String from, String to) async {
     _checkEntryTable(table);
     return (await _d).rawQuery(
-      'SELECT t.*, o.name AS outlet_name, m.name AS market_name FROM $table t '
+      'SELECT t.*, o.name AS outlet_name, o.address AS outlet_address, '
+      'o.owner AS outlet_owner, m.name AS market_name FROM $table t '
       'JOIN outlets o ON o.id=t.outlet_id JOIN markets m ON m.id=o.market_id '
       'WHERE t.date>=? AND t.date<? ORDER BY t.date DESC, t.id DESC',
       [from, to],

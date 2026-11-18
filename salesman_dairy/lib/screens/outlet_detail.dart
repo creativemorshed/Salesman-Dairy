@@ -61,13 +61,22 @@ class _View extends StatelessWidget {
     final phone = _s('phone');
     final reminder = o['pay_reminder'] as String?;
 
-    final info = <(IconData, String)>[
-      if (_s('owner').isNotEmpty) (Icons.person_outline, 'মালিক: ${_s('owner')}'),
-      if (_s('manager').isNotEmpty) (Icons.badge_outlined, 'ম্যানেজার: ${_s('manager')}'),
-      if (phone.isNotEmpty) (Icons.phone, phone),
-      if (_s('address').isNotEmpty) (Icons.place_outlined, 'বাজার: ${_s('address')}'),
-      if (_s('note').isNotEmpty) (Icons.sticky_note_2_outlined, _s('note')),
-    ];
+    // লাইন ১: মালিক + ফোন · লাইন ২: লোকেশন (বাজার) + ম্যানেজার · লাইন ৩: নোট
+    // ফোন ও লোকেশনে শুধু আইকন, কোনো লেখা-শিরোনাম নেই
+    final lines = <List<(IconData, String)>>[
+      [
+        if (_s('owner').isNotEmpty) (Icons.person_outline, 'মালিক: ${_s('owner')}'),
+        if (phone.isNotEmpty) (Icons.phone_outlined, phone),
+      ],
+      [
+        if (_s('address').isNotEmpty) (Icons.place_outlined, _s('address')),
+        if (_s('manager').isNotEmpty)
+          (Icons.badge_outlined, 'ম্যানেজার: ${_s('manager')}'),
+      ],
+      [
+        if (_s('note').isNotEmpty) (Icons.sticky_note_2_outlined, _s('note')),
+      ],
+    ].where((l) => l.isNotEmpty).toList();
 
     return DefaultTabController(
       length: 3,
@@ -93,28 +102,6 @@ class _View extends StatelessWidget {
               },
             ),
           ],
-        ),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-            child: Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.edit_note),
-                  label: const Text('এন্ট্রি', softWrap: false),
-                  onPressed: () => showVisitSheet(context, o),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.check),
-                  label: const Text('ভিজিট', softWrap: false),
-                  onPressed: () => quickVisit(context, o),
-                ),
-              ),
-            ]),
-          ),
         ),
         body: Column(
           children: [
@@ -163,20 +150,28 @@ class _View extends StatelessWidget {
                   if (idleWarning(o) != null)
                     InfoLine(Icons.history, idleWarning(o)!,
                         color: const Color(0xFFB45309)),
-                  for (final (icon, text) in info)
+                  for (final line in lines)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Row(children: [
-                        Icon(icon, size: 16, color: cs.onSurfaceVariant),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(text)),
-                      ]),
+                      child: Wrap(
+                        spacing: 18,
+                        runSpacing: 2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          for (final (icon, text) in line)
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              Icon(icon, size: 16, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 6),
+                              Flexible(child: Text(text)),
+                            ]),
+                        ],
+                      ),
                     ),
                   const Divider(height: 22),
                   Row(children: [
                     _num(context, 'আগের বাকি', taka(opening)),
-                    _num(context, 'মোট বিক্রয়', taka(_sum(d.sales))),
-                    _num(context, 'মোট কালেকশন', taka(_sum(d.collections))),
+                    _num(context, 'বিক্রয়', taka(_sum(d.sales))),
+                    _num(context, 'কালেকশন', taka(_sum(d.collections))),
                     _num(context, 'বর্তমান বাকি', taka(due),
                         color: due > 0 ? cs.error : Colors.green),
                   ]),

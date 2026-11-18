@@ -120,7 +120,8 @@ class _MarketFormState extends State<_MarketForm> {
 // রুট বাছাই (হোম/রুটে কোন রুট দেখাবে)
 // =====================================================================
 Future<void> showMarketPicker(BuildContext context) async {
-  final rows = await AppDb.instance.markets();
+  // আজকের বারে নির্ধারিত রুট ছাড়া অন্য রুটে ভিজিট করা যাবে না
+  final rows = await AppDb.instance.allowedMarketsToday();
   if (!context.mounted) return;
   await showModalBottomSheet<void>(
     context: context,
@@ -321,29 +322,30 @@ class _OutletFormState extends State<_OutletForm> {
               ),
             )),
         const SizedBox(height: 14),
-        Text('রুট সিলেক্ট করুনঃ- *', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
+        DropdownButtonFormField<int>(
+          value: _markets.any((m) => m['id'] == _market) ? _market : null,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'রুট সিলেক্ট করুনঃ- *'),
+          hint: const Text('রুট বাছুন'),
+          items: [
             for (final m in _markets)
-              ChoiceChip(
-                label: Text(m['name'] as String),
-                selected: _market == m['id'],
-                onSelected: (_) => setState(() => _market = m['id'] as int),
-              ),
-            if (_markets.length < routeQuickAddLimit)
-              ActionChip(
-                avatar: const Icon(Icons.add, size: 18),
-                label: const Text('নতুন রুট'),
-                onPressed: () async {
-                  await showMarketSheet(context);
-                  await _loadMarkets();
-                },
-              ),
+              DropdownMenuItem<int>(
+                  value: m['id'] as int, child: Text(m['name'] as String)),
           ],
+          onChanged: (v) => setState(() => _market = v),
         ),
+        if (_markets.length < routeQuickAddLimit)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('নতুন রুট'),
+              onPressed: () async {
+                await showMarketSheet(context);
+                await _loadMarkets();
+              },
+            ),
+          ),
         const SizedBox(height: 14),
         Text('গ্রেড (A+ = বড়, A = মাঝারি, B = ছোট, F = খারাপ)',
             style: Theme.of(context).textTheme.titleSmall),

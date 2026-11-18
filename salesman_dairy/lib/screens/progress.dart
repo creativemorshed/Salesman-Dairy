@@ -132,7 +132,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           icon: Icons.percent)),
                   Expanded(
                       child: StatCard(
-                          label: 'স্পেশাল কমিশন',
+                          label: 'স্পেশাল',
                           value: taka(d.special),
                           icon: Icons.stars_outlined)),
                   Expanded(

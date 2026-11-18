@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../db.dart';
+import '../donation.dart';
 import '../sheets.dart';
 import '../state.dart';
 import '../utils.dart';
@@ -221,6 +222,9 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
         ),
+
+        // ---- একদম নিচে: ডোনেশন কার্ড ----
+        const DonationCard(),
       ],
     );
   }

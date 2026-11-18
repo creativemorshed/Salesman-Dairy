@@ -53,7 +53,8 @@ class _RouteScreenState extends State<RouteScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('আজকের রুট'),
+        title: const Text('আজকের রুটের বিস্তারিতঃ-',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
         actions: [
           ValueListenableBuilder<String?>(
             valueListenable: _marketName,
@@ -61,7 +62,7 @@ class _RouteScreenState extends State<RouteScreen> {
               padding: const EdgeInsets.only(right: 12),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.5),
+                    maxWidth: MediaQuery.of(context).size.width * 0.42),
                 child: MarketChip(
                     name: name,
                     onTap: () => showMarketPicker(context)),
@@ -108,8 +109,8 @@ class _RouteScreenState extends State<RouteScreen> {
           child: Row(
             children: [
               _mini(context, 'ভিজিট', '${bn(done.length)}/${bn(d.route.length)}'),
-              _mini(context, 'আজকের বিক্রয়', taka(d.todaySales)),
-              _mini(context, 'আজকের কালেকশন', taka(d.todayColl)),
+              _mini(context, 'বিক্রয়', taka(d.todaySales)),
+              _mini(context, 'কালেকশন', taka(d.todayColl)),
             ],
           ),
         ),
