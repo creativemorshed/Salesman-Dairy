@@ -120,8 +120,7 @@ class _MarketFormState extends State<_MarketForm> {
 // রুট বাছাই (হোম/রুটে কোন রুট দেখাবে)
 // =====================================================================
 Future<void> showMarketPicker(BuildContext context) async {
-  // আজকের বারে নির্ধারিত রুট ছাড়া অন্য রুটে ভিজিট করা যাবে না
-  final rows = await AppDb.instance.allowedMarketsToday();
+  final rows = await AppDb.instance.markets();
   if (!context.mounted) return;
   await showModalBottomSheet<void>(
     context: context,

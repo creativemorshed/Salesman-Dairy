@@ -162,23 +162,20 @@ $_marketDue AS due''';
         ['%,$weekday,%'],
       ));
 
-  /// আজ যে যে রুটে ভিজিট করা যাবে: আজকের বারে নির্ধারিত রুটগুলো।
-  /// আজ কোনো রুট নির্ধারিত না থাকলে (বা বার ঠিক করা না থাকলে) সবগুলো।
-  Future<List<Rec>> allowedMarketsToday() async {
-    final todays = await marketsOnDay(DateTime.now().weekday);
-    return todays.isNotEmpty ? todays : await markets();
-  }
-
-  /// হোম/রুটে দেখানোর রুট: (আজকের অনুমোদিত রুটের মধ্যে) বাছাই করা → প্রথমটা
+  /// হোম/রুটে দেখানোর রুট: বাছাই করা → আজকের নির্ধারিত → প্রথমটা
   Future<Rec?> activeMarket(int? selectedId) async {
-    final allowed = await allowedMarketsToday();
-    if (allowed.isEmpty) return null;
+    final all = await markets();
+    if (all.isEmpty) return null;
     if (selectedId != null) {
-      for (final m in allowed) {
+      for (final m in all) {
         if (m['id'] == selectedId) return m;
       }
     }
-    return allowed.first;
+    final w = DateTime.now().weekday;
+    for (final m in all) {
+      if (hasDay(m['days'] as String, w)) return m;
+    }
+    return all.first;
   }
 
   Future<void> saveMarket(String name, List<int> days, {int? id}) async {
