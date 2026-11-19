@@ -889,7 +889,7 @@ class _OutletPickerState extends State<_OutletPicker> {
           child: TextField(
             onChanged: _search,
             decoration: InputDecoration(
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 hintText: tr('আউটলেট খুঁজুন'),
                 isDense: true),
           ),

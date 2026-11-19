@@ -57,11 +57,11 @@ class _OutletsScreenState extends State<OutletsScreen> {
                 child: TextField(
                   onChanged: (v) => setState(() => _q = v),
                   decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search),
                     hintText: tr('নাম, মালিক বা ফোন দিয়ে খুঁজুন'),
                     isDense: true,
                     filled: true,
-                    fillColor: Color(0xFFFFFDF8),
+                    fillColor: const Color(0xFFFFFDF8),
                   ),
                 ),
               ),

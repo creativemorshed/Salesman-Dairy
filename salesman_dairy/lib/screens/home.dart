@@ -33,24 +33,24 @@ class Home extends StatelessWidget {
           onDestinationSelected: (v) => tabIndex.value = v,
           destinations: [
             NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home),
                 label: tr('হোম')),
             NavigationDestination(
-                icon: Icon(Icons.alt_route),
-                selectedIcon: Icon(Icons.route),
+                icon: const Icon(Icons.alt_route),
+                selectedIcon: const Icon(Icons.route),
                 label: tr('রুট')),
             NavigationDestination(
-                icon: Icon(Icons.storefront_outlined),
-                selectedIcon: Icon(Icons.storefront),
+                icon: const Icon(Icons.storefront_outlined),
+                selectedIcon: const Icon(Icons.storefront),
                 label: tr('আউটলেট')),
             NavigationDestination(
-                icon: Icon(Icons.sell_outlined),
-                selectedIcon: Icon(Icons.sell),
+                icon: const Icon(Icons.sell_outlined),
+                selectedIcon: const Icon(Icons.sell),
                 label: tr('বিক্রয়')),
             NavigationDestination(
-                icon: Icon(Icons.trending_up),
-                selectedIcon: Icon(Icons.show_chart),
+                icon: const Icon(Icons.trending_up),
+                selectedIcon: const Icon(Icons.show_chart),
                 label: tr('এক নজরে')),
           ],
         ),

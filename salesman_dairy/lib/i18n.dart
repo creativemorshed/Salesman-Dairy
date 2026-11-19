@@ -6,7 +6,7 @@ final ValueNotifier<String> lang = ValueNotifier<String>('en');
 bool get isEn => lang.value != 'bn';
 
 /// ভাষা বদলালে নিচের সব [Text] নিজে থেকে নতুন করে আঁকা হয়
-class LangScope extends InheritedNotifier<ValueNotifier<String>> {
+class LangScope extends m.InheritedNotifier<ValueNotifier<String>> {
   const LangScope({super.key, required super.notifier, required super.child});
 
   /// এই ভাষার উপর নির্ভর করে — ভাষা বদলালে [context] এর উইজেট রিবিল্ড হবে
