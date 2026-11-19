@@ -255,15 +255,18 @@ class _OutletCard extends StatelessWidget {
                   padding: EdgeInsets.only(right: 6),
                   child: Icon(Icons.check_circle, color: Colors.green, size: 22),
                 ),
-              OutlinedButton(
-                onPressed: () => showVisitSheet(context, r),
-                child: const Text('এন্ট্রি', softWrap: false),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.tonal(
-                onPressed: () => quickVisit(context, r),
-                child: const Text('ভিজিট', softWrap: false),
-              ),
+              // অন্য রুটের আউটলেটে (শুধু অনুস্মারক) ভিজিট/এন্ট্রি দেওয়া যাবে না
+              if (!showMarket) ...[
+                OutlinedButton(
+                  onPressed: () => showVisitSheet(context, r),
+                  child: const Text('এন্ট্রি', softWrap: false),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.tonal(
+                  onPressed: () => quickVisit(context, r),
+                  child: const Text('ভিজিট', softWrap: false),
+                ),
+              ],
             ],
           ),
         ],
