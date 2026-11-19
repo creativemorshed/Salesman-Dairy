@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n.dart';
 
 import '../db.dart';
 import '../sheets.dart';
@@ -55,9 +56,9 @@ class _OutletsScreenState extends State<OutletsScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: TextField(
                   onChanged: (v) => setState(() => _q = v),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     prefixIcon: Icon(Icons.search),
-                    hintText: 'নাম, মালিক বা ফোন দিয়ে খুঁজুন',
+                    hintText: tr('নাম, মালিক বা ফোন দিয়ে খুঁজুন'),
                     isDense: true,
                     filled: true,
                     fillColor: Color(0xFFFFFDF8),

@@ -2,7 +2,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image/image.dart' as img;
 import 'package:share_plus/share_plus.dart';
@@ -50,7 +51,7 @@ class _SalesScreenState extends State<SalesScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('বিক্রয় ও কালেকশন'),
-          bottom: const TabBar(tabs: [Tab(text: 'বিক্রয়'), Tab(text: 'কালেকশন')]),
+          bottom: const TabBar(tabs: [Tab(child: Text('বিক্রয়')), Tab(child: Text('কালেকশন'))]),
         ),
         floatingActionButton: Builder(
           builder: (ctx) => FloatingActionButton.extended(
@@ -198,7 +199,7 @@ class _DayCardState extends State<_DayCard> {
     try {
       // সিস্টেমের "সংরক্ষণ" ডায়ালগ: ফোনের Downloads/যেকোনো ফোল্ডারে রাখা যায়
       final saved = await FilePicker.platform.saveFile(
-        dialogTitle: 'JPG সংরক্ষণ করুন',
+        dialogTitle: tr('JPG সংরক্ষণ করুন'),
         fileName: name,
         type: FileType.image,
         bytes: bytes,
@@ -251,7 +252,7 @@ class _DayCardState extends State<_DayCard> {
                   maintainAnimation: true,
                   maintainState: true,
                   child: IconButton(
-                    tooltip: 'JPG ডাউনলোড',
+                    tooltip: tr('JPG ডাউনলোড'),
                     icon: const Icon(Icons.download_outlined),
                     onPressed: _download,
                   ),

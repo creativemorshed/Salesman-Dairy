@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n.dart';
 
 import '../db.dart';
 import '../donation.dart';
@@ -92,7 +93,7 @@ class DashboardScreen extends StatelessWidget {
                   name: market?['name'] as String?,
                   onTap: () => showMarketPicker(context)),
               IconButton(
-                tooltip: 'সেটিংস',
+                tooltip: tr('সেটিংস'),
                 icon: const Icon(Icons.settings_outlined),
                 onPressed: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const SettingsScreen())),
@@ -124,7 +125,7 @@ class DashboardScreen extends StatelessWidget {
                     TextSpan(
                         text: market['name'] as String,
                         style: const TextStyle(fontWeight: FontWeight.w700)),
-                    TextSpan(text: ' মোট বাকি: ${taka(marketDue)}'),
+                    TextSpan(text: tr(' মোট বাকি: ${taka(marketDue)}')),
                   ]),
                   textAlign: TextAlign.center,
                   style: tt.bodyLarge,

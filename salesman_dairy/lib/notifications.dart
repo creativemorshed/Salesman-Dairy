@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'i18n.dart';
 import 'dart:io';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -138,17 +139,17 @@ class Reminders {
         ...parts,
         for (final o in todayNotes.take(5))
           '• ${o['name']}: ${(o['next_note'] as String).trim()}',
-      ].join('\n');
+      ].map(tr).join('\n');
       await _plugin.zonedSchedule(
         1000 + i,
-        'আজকের কাজ',
-        parts.join(' · '),
+        tr('আজকের কাজ'),
+        tr(parts.join(' · ')),
         at,
         NotificationDetails(
           android: AndroidNotificationDetails(
             'daily_tasks',
-            'দৈনিক কাজের রিমাইন্ডার',
-            channelDescription: 'আজকের ভিজিট, টাকা চাওয়া ও বিশেষ নোটের রিমাইন্ডার',
+            tr('দৈনিক কাজের রিমাইন্ডার'),
+            channelDescription: tr('আজকের ভিজিট, টাকা চাওয়া ও বিশেষ নোটের রিমাইন্ডার'),
             importance: Importance.high,
             priority: Priority.high,
             styleInformation: BigTextStyleInformation(big),

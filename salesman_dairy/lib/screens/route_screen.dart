@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n.dart';
 
 import '../db.dart';
 import '../sheets.dart';
@@ -241,7 +242,7 @@ class _OutletCard extends StatelessWidget {
             children: [
               if (phone.isNotEmpty) ...[
                 IconButton(
-                    tooltip: 'কল',
+                    tooltip: tr('কল'),
                     icon: const Icon(Icons.call),
                     onPressed: () => callPhone(context, phone)),
                 IconButton(

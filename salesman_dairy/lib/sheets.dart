@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 
 import 'db.dart';
@@ -85,7 +88,7 @@ class _MarketFormState extends State<_MarketForm> {
         const SizedBox(height: 12),
         TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: 'রুটের নাম *')),
+            decoration: InputDecoration(labelText: tr('রুটের নাম *'))),
         const SizedBox(height: 14),
         Text('কোন কোন বারে ভিজিট করেন?',
             style: Theme.of(context).textTheme.titleSmall),
@@ -296,26 +299,26 @@ class _OutletFormState extends State<_OutletForm> {
         TextField(
             controller: _name,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'দোকানের নাম *')),
+            decoration: InputDecoration(labelText: tr('দোকানের নাম *'))),
         const SizedBox(height: 10),
         TextField(
             controller: _owner,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'মালিকের নাম')),
+            decoration: InputDecoration(labelText: tr('মালিকের নাম'))),
         const SizedBox(height: 10),
         TextField(
             controller: _manager,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'ম্যানেজারের নাম')),
+            decoration: InputDecoration(labelText: tr('ম্যানেজারের নাম'))),
         const SizedBox(height: 10),
         TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             decoration: InputDecoration(
-              labelText: 'ফোন নম্বর',
+              labelText: tr('ফোন নম্বর'),
               suffixIcon: IconButton(
-                tooltip: 'মোবাইলের কন্টাক্ট থেকে নিন',
+                tooltip: tr('মোবাইলের কন্টাক্ট থেকে নিন'),
                 icon: const Icon(Icons.contacts_outlined),
                 onPressed: _pickContact,
               ),
@@ -324,7 +327,7 @@ class _OutletFormState extends State<_OutletForm> {
         DropdownButtonFormField<int>(
           value: _markets.any((m) => m['id'] == _market) ? _market : null,
           isExpanded: true,
-          decoration: const InputDecoration(labelText: 'রুট সিলেক্ট করুনঃ- *'),
+          decoration: InputDecoration(labelText: tr('রুট সিলেক্ট করুনঃ- *')),
           hint: const Text('রুট বাছুন'),
           items: [
             for (final m in _markets)
@@ -364,19 +367,19 @@ class _OutletFormState extends State<_OutletForm> {
         TextField(
             controller: _opening,
             keyboardType: _numKb,
-            decoration: const InputDecoration(
-                labelText: 'আগের বাকি (অ্যাপ ব্যবহারের আগে থেকে থাকলে)',
+            decoration: InputDecoration(
+                labelText: tr('আগের বাকি (অ্যাপ ব্যবহারের আগে থেকে থাকলে)'),
                 prefixText: '৳ ')),
         const SizedBox(height: 10),
         TextField(
             controller: _address,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(labelText: 'বাজারের নামঃ-')),
+            decoration: InputDecoration(labelText: tr('বাজারের নামঃ-'))),
         const SizedBox(height: 10),
         TextField(
             controller: _note,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'নোট')),
+            decoration: InputDecoration(labelText: tr('নোট'))),
         ErrorText(_err),
         FilledButton(onPressed: _save, child: const Text('সংরক্ষণ')),
       ],
@@ -422,8 +425,15 @@ class _VisitFormState extends State<_VisitForm> {
   }
 
   Future<void> _save() async {
-    if (parseNum(_sale.text) <= 0 && parseNum(_coll.text) <= 0) {
-      snack(context, 'বিক্রয় বা কালেকশন লিখুন। কিছু না থাকলে "ভিজিট" বাটন চাপুন।');
+    // বিক্রয়/কালেকশন না থাকলেও শুধু নোট, বিশেষ নোট বা তাগাদার তারিখ দিয়ে সংরক্ষণ করা যাবে
+    final hasSomething = parseNum(_sale.text) > 0 ||
+        parseNum(_coll.text) > 0 ||
+        _note.text.trim().isNotEmpty ||
+        _nextNote.text.trim().isNotEmpty ||
+        _reminder != null;
+    if (!hasSomething) {
+      snack(context,
+          'বিক্রয়, কালেকশন বা নোট লিখুন। কিছু না থাকলে "ভিজিট" বাটন চাপুন।');
       return;
     }
     await AppDb.instance.addVisit(
@@ -458,8 +468,8 @@ class _VisitFormState extends State<_VisitForm> {
                 controller: _sale,
                 keyboardType: _numKb,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                    labelText: 'আজকের বিক্রয়', prefixText: '৳ ')),
+                decoration: InputDecoration(
+                    labelText: tr('আজকের বিক্রয়'), prefixText: '৳ ')),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -467,8 +477,8 @@ class _VisitFormState extends State<_VisitForm> {
                 controller: _coll,
                 keyboardType: _numKb,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                    labelText: 'আজকের কালেকশন', prefixText: '৳ ')),
+                decoration: InputDecoration(
+                    labelText: tr('আজকের কালেকশন'), prefixText: '৳ ')),
           ),
         ]),
         const SizedBox(height: 10),
@@ -482,8 +492,8 @@ class _VisitFormState extends State<_VisitForm> {
         TextField(
             controller: _note,
             maxLines: 2,
-            decoration: const InputDecoration(
-                labelText: 'নোট (কী কথা হলো?)')),
+            decoration: InputDecoration(
+                labelText: tr('নোট (কী কথা হলো?)'))),
         const SizedBox(height: 12),
         ReminderField(
           label: 'পরের তাগাদার তারিখ',
@@ -512,15 +522,17 @@ Future<void> quickVisit(BuildContext context, Rec outlet) async {
     date: today(),
     keepFollowUp: true,
   );
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text('${outlet['name']} — ভিজিট সংরক্ষণ হয়েছে'),
-      action: SnackBarAction(
-        label: 'বাতিল',
-        onPressed: () => AppDb.instance.deleteRow('visits', id),
-      ),
-    ));
+  messenger.hideCurrentSnackBar();
+  final bar = messenger.showSnackBar(SnackBar(
+    content: Text('${outlet['name']} — ভিজিট সংরক্ষণ হয়েছে'),
+    duration: const Duration(seconds: 3),
+    action: SnackBarAction(
+      label: tr('বাতিল'),
+      onPressed: () => AppDb.instance.deleteRow('visits', id),
+    ),
+  ));
+  // অ্যাকশন বাটন থাকলে কিছু ভার্সনে নিজে থেকে লুকায় না — তাই ৩ সেকেন্ড পরে নিজেই বন্ধ
+  Timer(const Duration(seconds: 3), bar.close);
 }
 
 // =====================================================================
@@ -605,7 +617,7 @@ class _EntryFormState extends State<_EntryForm> {
         const SizedBox(height: 10),
         TextField(
             controller: _note,
-            decoration: const InputDecoration(labelText: 'নোট (ঐচ্ছিক)')),
+            decoration: InputDecoration(labelText: tr('নোট (ঐচ্ছিক)'))),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -713,8 +725,8 @@ class _TargetFormState extends State<_TargetForm> {
             controller: _target,
             keyboardType: _numKb,
             autofocus: true,
-            decoration: const InputDecoration(
-                labelText: 'টার্গেট (বিক্রয় ও কালেকশন দুটোর জন্য)',
+            decoration: InputDecoration(
+                labelText: tr('টার্গেট (বিক্রয় ও কালেকশন দুটোর জন্য)'),
                 prefixText: '৳ ')),
         const Padding(
           padding: EdgeInsets.only(top: 8),
@@ -803,11 +815,11 @@ class _ExpenseFormState extends State<_ExpenseForm> {
         TextField(
             controller: _amount,
             keyboardType: _numKb,
-            decoration: const InputDecoration(labelText: 'টাকা *')),
+            decoration: InputDecoration(labelText: tr('টাকা *'))),
         const SizedBox(height: 10),
         TextField(
             controller: _note,
-            decoration: const InputDecoration(labelText: 'নোট (ঐচ্ছিক)')),
+            decoration: InputDecoration(labelText: tr('নোট (ঐচ্ছিক)'))),
         const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerLeft,
@@ -876,9 +888,9 @@ class _OutletPickerState extends State<_OutletPicker> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: TextField(
             onChanged: _search,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
                 prefixIcon: Icon(Icons.search),
-                hintText: 'আউটলেট খুঁজুন',
+                hintText: tr('আউটলেট খুঁজুন'),
                 isDense: true),
           ),
         ),
@@ -946,10 +958,10 @@ class NextNoteField extends StatelessWidget {
           controller: controller,
           maxLines: 2,
           decoration: InputDecoration(
-            labelText: 'পরের ভিজিটের জন্য বিশেষ নোট (ঐচ্ছিক)',
-            helperText: has
+            labelText: tr('পরের ভিজিটের জন্য বিশেষ নোট (ঐচ্ছিক)'),
+            helperText: tr(has
                 ? 'সংরক্ষণ করলে আগের নোট মুছে এটা থাকবে'
-                : 'পরের বার এই দোকানে গেলে রিমাইন্ডার হিসেবে দেখাবে',
+                : 'পরের বার এই দোকানে গেলে রিমাইন্ডার হিসেবে দেখাবে'),
           ),
         ),
       ],
@@ -972,16 +984,16 @@ class CommissionFields extends StatelessWidget {
         child: TextField(
             controller: commission,
             keyboardType: _numKb,
-            decoration: const InputDecoration(
-                labelText: 'কমিশন', prefixText: '৳ ')),
+            decoration: InputDecoration(
+                labelText: tr('কমিশন'), prefixText: '৳ ')),
       ),
       const SizedBox(width: 10),
       Expanded(
         child: TextField(
             controller: special,
             keyboardType: _numKb,
-            decoration: const InputDecoration(
-                labelText: 'স্পেশাল কমিশন', prefixText: '৳ ')),
+            decoration: InputDecoration(
+                labelText: tr('স্পেশাল কমিশন'), prefixText: '৳ ')),
       ),
     ]);
   }

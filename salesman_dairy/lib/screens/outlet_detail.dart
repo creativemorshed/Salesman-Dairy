@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n.dart';
 
 import '../db.dart';
 import '../sheets.dart';
@@ -85,12 +86,12 @@ class _View extends StatelessWidget {
           title: Text(_s('name')),
           actions: [
             IconButton(
-              tooltip: 'এডিট',
+              tooltip: tr('এডিট'),
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => showOutletSheet(context, existing: o),
             ),
             IconButton(
-              tooltip: 'মুছুন',
+              tooltip: tr('মুছুন'),
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
                 final ok = await confirm(context,
@@ -120,7 +121,7 @@ class _View extends StatelessWidget {
                     ),
                     if (phone.isNotEmpty) ...[
                       IconButton.filledTonal(
-                          tooltip: 'কল',
+                          tooltip: tr('কল'),
                           icon: const Icon(Icons.call),
                           onPressed: () => callPhone(context, phone)),
                       IconButton.filledTonal(
@@ -195,9 +196,9 @@ class _View extends StatelessWidget {
               ),
             ),
             const TabBar(tabs: [
-              Tab(text: 'বিক্রয়'),
-              Tab(text: 'কালেকশন'),
-              Tab(text: 'ভিজিট'),
+              Tab(child: Text('বিক্রয়')),
+              Tab(child: Text('কালেকশন')),
+              Tab(child: Text('ভিজিট')),
             ]),
             Expanded(
               child: TabBarView(children: [

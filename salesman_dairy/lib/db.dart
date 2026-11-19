@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import 'i18n.dart';
 import 'utils.dart';
 
 typedef Rec = Map<String, Object?>;
@@ -547,7 +548,7 @@ FROM markets m''',
       'outlets.csv': await table(
         'SELECT $_outletCols $_outletFrom ORDER BY m.name, o.name',
         [today()],
-        ['রুট', 'আউটলেট', 'মালিক', 'ম্যানেজার', 'ফোন', 'বাজার', 'গ্রেড', 'বাকি'],
+        ['রুট', 'আউটলেট', 'মালিক', 'ম্যানেজার', 'ফোন', 'বাজার', 'গ্রেড', 'বাকি'].map(tr).toList(),
         ['market_name', 'name', 'owner', 'phone', 'address', 'grade', 'due'],
       ),
       'sales.csv': await table(
@@ -556,7 +557,7 @@ FROM markets m''',
         'FROM sales s JOIN outlets o ON o.id=s.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY s.date',
         [],
-        ['তারিখ', 'রুট', 'আউটলেট', 'বিক্রয়', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'],
+        ['তারিখ', 'রুট', 'আউটলেট', 'বিক্রয়', 'কমিশন', 'স্পেশাল কমিশন', 'নোট'].map(tr).toList(),
         ['date', 'market', 'outlet', 'amount', 'commission', 'special_commission', 'note'],
       ),
       'collections.csv': await table(
@@ -564,13 +565,13 @@ FROM markets m''',
         'FROM collections c JOIN outlets o ON o.id=c.outlet_id '
         'JOIN markets m ON m.id=o.market_id ORDER BY c.date',
         [],
-        ['তারিখ', 'রুট', 'আউটলেট', 'কালেকশন', 'নোট'],
+        ['তারিখ', 'রুট', 'আউটলেট', 'কালেকশন', 'নোট'].map(tr).toList(),
         ['date', 'market', 'outlet', 'amount', 'note'],
       ),
       'expenses.csv': await table(
         'SELECT date, category, amount, note FROM expenses ORDER BY date',
         [],
-        ['তারিখ', 'ধরন', 'টাকা', 'নোট'],
+        ['তারিখ', 'ধরন', 'টাকা', 'নোট'].map(tr).toList(),
         ['date', 'category', 'amount', 'note'],
       ),
     };

@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
 import 'db.dart';
+import 'i18n.dart';
 import 'lock.dart';
 import 'notifications.dart';
 import 'screens/home.dart';
 import 'state.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // সংরক্ষিত ভাষা (না থাকলে ইংরেজি)
+  try {
+    final l = await AppDb.instance.getSetting('lang');
+    if (l == 'bn') lang.value = 'bn';
+  } catch (_) {}
   runApp(const SalesmanDairyApp());
   AppDb.instance.getSetting('stale_days').then((v) {
     final n = int.tryParse(v ?? '');
@@ -39,13 +45,22 @@ class SalesmanDairyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ValueListenableBuilder<String>(
+      valueListenable: lang,
+      builder: (context, _, __) => _app(),
+    );
+  }
+
+  Widget _app() {
     const cream = Color(0xFFF6F1E7);
     return MaterialApp(
       title: 'Salesman Dairy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'NotoSansBengali', // অ্যাপের সাথেই আসে, ইন্টারনেট লাগে না
+        // ইংরেজিতে সিস্টেমের ফন্ট, বাংলা লেখার জন্য সবসময় Noto Sans Bengali (অ্যাপের সাথেই আসে)
+        fontFamily: isEn ? null : 'NotoSansBengali',
+        fontFamilyFallback: const ['NotoSansBengali'],
         colorSchemeSeed: const Color(0xFFD9480F),
         scaffoldBackgroundColor: cream,
         textTheme: _textTheme,
@@ -66,7 +81,10 @@ class SalesmanDairyApp extends StatelessWidget {
             const InputDecorationTheme(border: OutlineInputBorder()),
       ),
       // পিন লক পুরো অ্যাপের (সব স্ক্রিনের) উপরে বসে
-      builder: (context, child) => LockGate(child: child ?? const SizedBox()),
+      builder: (context, child) => LangScope(
+        notifier: lang,
+        child: LockGate(child: child ?? const SizedBox()),
+      ),
       home: const Home(),
     );
   }

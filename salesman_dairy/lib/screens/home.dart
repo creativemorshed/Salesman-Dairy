@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../i18n.dart';
 
 import '../state.dart';
 import 'dashboard.dart';
@@ -23,35 +24,38 @@ class Home extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: tabIndex,
-      builder: (context, i, _) => Scaffold(
+      builder: (context, i, _) {
+        LangScope.watch(context);
+        return Scaffold(
         body: IndexedStack(index: i, children: _pages),
         bottomNavigationBar: NavigationBar(
           selectedIndex: i,
           onDestinationSelected: (v) => tabIndex.value = v,
-          destinations: const [
+          destinations: [
             NavigationDestination(
                 icon: Icon(Icons.home_outlined),
                 selectedIcon: Icon(Icons.home),
-                label: 'হোম'),
+                label: tr('হোম')),
             NavigationDestination(
                 icon: Icon(Icons.alt_route),
                 selectedIcon: Icon(Icons.route),
-                label: 'রুট'),
+                label: tr('রুট')),
             NavigationDestination(
                 icon: Icon(Icons.storefront_outlined),
                 selectedIcon: Icon(Icons.storefront),
-                label: 'আউটলেট'),
+                label: tr('আউটলেট')),
             NavigationDestination(
                 icon: Icon(Icons.sell_outlined),
                 selectedIcon: Icon(Icons.sell),
-                label: 'বিক্রয়'),
+                label: tr('বিক্রয়')),
             NavigationDestination(
                 icon: Icon(Icons.trending_up),
                 selectedIcon: Icon(Icons.show_chart),
-                label: 'এক নজরে'),
+                label: tr('এক নজরে')),
           ],
         ),
-      ),
+      );
+      },
     );
   }
 }

@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'db.dart';
@@ -56,7 +57,7 @@ class AppLock {
       final auth = LocalAuthentication();
       if (!await auth.isDeviceSupported()) return false;
       return await auth.authenticate(
-        localizedReason: 'ডায়েরি খুলতে ফিঙ্গারপ্রিন্ট দিন',
+        localizedReason: tr('ডায়েরি খুলতে ফিঙ্গারপ্রিন্ট দিন'),
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,
@@ -312,7 +313,7 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
                           onComplete: _onPin,
                           extra: _bio
                               ? IconButton(
-                                  tooltip: 'ফিঙ্গারপ্রিন্ট',
+                                  tooltip: tr('ফিঙ্গারপ্রিন্ট'),
                                   icon: const Icon(Icons.fingerprint, size: 30),
                                   onPressed: _bioAuth,
                                 )

@@ -1,19 +1,32 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'state.dart';
 
 const _bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-const bnMonths = [
+const _bnMonths = [
   'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
   'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর',
 ];
+const _enMonths = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+/// মাসের নাম — বর্তমান ভাষায়
+List<String> get bnMonths => isEn ? _enMonths : _bnMonths;
 // DateTime.weekday: সোম=1 ... রবি=7
-const weekdayNames = [
+const _bnWeekdayNames = [
   '', 'সোমবার', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'শনিবার', 'রবিবার',
 ];
-const weekdayShort = ['', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি', 'রবি'];
+const _enWeekdayNames = [
+  '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+];
+const _bnWeekdayShort = ['', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি', 'রবি'];
+const _enWeekdayShort = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+List<String> get weekdayNames => isEn ? _enWeekdayNames : _bnWeekdayNames;
+List<String> get weekdayShort => isEn ? _enWeekdayShort : _bnWeekdayShort;
 
 /// এতগুলো রুট হয়ে গেলে নতুন রুট যোগ/বাদ দেওয়ার অপশন শুধু সেটিংসে থাকে
 const routeQuickAddLimit = 6;
@@ -47,10 +60,12 @@ List<T> sortMarkets<T extends Map<String, Object?>>(List<T> list) {
   return out;
 }
 
-/// ইংরেজি সংখ্যাকে বাংলা সংখ্যায় রূপান্তর
-String bn(Object v) => v
-    .toString()
-    .replaceAllMapped(RegExp(r'[0-9]'), (m) => _bnDigits[int.parse(m[0]!)]);
+/// সংখ্যা দেখানোর জন্য: বাংলা ভাষায় বাংলা অংক, ইংরেজিতে ইংরেজি অংক
+String bn(Object v) => isEn
+    ? v.toString()
+    : v
+        .toString()
+        .replaceAllMapped(RegExp(r'[0-9]'), (m) => _bnDigits[int.parse(m[0]!)]);
 
 /// বাংলা সংখ্যাকে ইংরেজি সংখ্যায় রূপান্তর
 String toEn(String s) {
@@ -218,8 +233,8 @@ Future<String?> pickDate(BuildContext context, {String? initial}) async {
     initialDate: initial != null ? parseYmd(initial) : DateTime.now(),
     firstDate: DateTime(2020),
     lastDate: DateTime(2100),
-    confirmText: 'ঠিক আছে',
-    cancelText: 'বাতিল',
+    confirmText: tr('ঠিক আছে'),
+    cancelText: tr('বাতিল'),
   );
   return d == null ? null : ymd(d);
 }

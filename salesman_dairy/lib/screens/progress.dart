@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n.dart';
 
 import '../db.dart';
 import '../utils.dart';
@@ -445,10 +446,10 @@ class _TargetBlock extends StatelessWidget {
           child: Text.rich(
             TextSpan(style: tt.bodyMedium, children: [
               const TextSpan(text: '● ', style: TextStyle(color: salesColor)),
-              TextSpan(text: 'বিক্রয় বাকি ${taka(salesLeft)}'),
+              TextSpan(text: tr('বিক্রয় বাকি ${taka(salesLeft)}')),
               const TextSpan(text: '  |  '),
               const TextSpan(text: '● ', style: TextStyle(color: collColor)),
-              TextSpan(text: 'কালেকশন বাকি ${taka(collLeft)}'),
+              TextSpan(text: tr('কালেকশন বাকি ${taka(collLeft)}')),
             ]),
             maxLines: 1,
           ),
